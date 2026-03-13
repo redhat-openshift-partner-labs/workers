@@ -1,0 +1,253 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: etl-field-schema
+  namespace: opl-system
+  labels:
+    app: worker-etl
+    component: schema
+data:
+  # ──────────────────────────────────────────────────────────────────────
+  # ETL Field Schema
+  #
+  # Defines how raw Google Sheet fields (Tab 2 custom headers) map to
+  # the canonical DB schema. The ETL worker loads this at startup and
+  # validates/transforms each incoming payload against it.
+  #
+  # Field definition:
+  #   source_key:   Key name as it arrives from AppScript (Tab 2 header)
+  #   db_column:    Target column in the labs table (null = goes to extras JSONB)
+  #   type:         Expected type after coercion (string, int, float, bool, datetime, email)
+  #   required:     Whether the field must be present and non-empty
+  #   default:      Default value if field is absent or empty (null = no default)
+  #   transform:    Optional transformation to apply (split_name_first, split_name_last, etc.)
+  #   is_standard_criteria: Whether this field is evaluated for auto-provision policy
+  # ──────────────────────────────────────────────────────────────────────
+  schema.yaml: |
+    version: "1.0.0"
+
+    # Fields that the ETL worker generates (not from the Sheet)
+    generated_fields:
+      - db_column: cluster_id
+        generator: uuid4
+      - db_column: generated_name
+        generator: short_id    # e.g., "opl-a7f3b2"
+      - db_column: cluster_name
+        generator: derive_cluster_name  # from company_name + project_name
+      - db_column: cloud_provider
+        generator: static
+        value: "aws"
+      - db_column: state
+        generator: static
+        value: "Pending"
+
+    # Mapping from Sheet payload keys to DB columns
+    fields:
+      # ── Identity & Contact ──────────────────────────────────────────
+      - source_key: email
+        db_column: null          # not stored directly — used for audit only
+        type: email
+        required: false
+
+      - source_key: company_name
+        db_column: company_name
+        type: string
+        required: true
+
+      - source_key: primary_contact_name
+        db_column: primary_first
+        type: string
+        required: true
+        transform: split_name_first
+
+      - source_key: primary_contact_name
+        db_column: primary_last
+        type: string
+        required: true
+        transform: split_name_last
+
+      - source_key: primary_contact_email
+        db_column: primary_email
+        type: email
+        required: true
+
+      - source_key: secondary_contact_name
+        db_column: secondary_first
+        type: string
+        required: false
+        default: ""
+        transform: split_name_first
+
+      - source_key: secondary_contact_name
+        db_column: secondary_last
+        type: string
+        required: false
+        default: ""
+        transform: split_name_last
+
+      - source_key: secondary_contact_email
+        db_column: secondary_email
+        type: email
+        required: false
+        default: ""
+
+      - source_key: sponsor
+        db_column: sponsor
+        type: email
+        required: true
+
+      # ── Request Details ─────────────────────────────────────────────
+      - source_key: project_name
+        db_column: project_name
+        type: string
+        required: true
+
+      - source_key: request_type
+        db_column: request_type
+        type: string
+        required: true
+        is_standard_criteria: true
+        standard_values:
+          - "OpenShift"
+          - "OpenShift Virtualization"
+
+      - source_key: openshift_version
+        db_column: openshift_version
+        type: string
+        required: true
+
+      - source_key: description
+        db_column: description
+        type: string
+        required: true
+
+      - source_key: note
+        db_column: notes
+        type: string
+        required: false
+        default: ""
+
+      # ── Sizing ──────────────────────────────────────────────────────
+      - source_key: cluster_size
+        db_column: cluster_size
+        type: string
+        required: false
+        default: ""
+        is_standard_criteria: true
+        standard_values:
+          - ""
+          - "Small"
+          - "Standard"
+
+      - source_key: virt_size
+        db_column: null          # → extras JSONB
+        type: string
+        required: false
+        default: ""
+        is_standard_criteria: true
+        standard_values:
+          - ""
+          - "Standard"
+
+      # ── Scheduling ──────────────────────────────────────────────────
+      - source_key: start_date
+        db_column: start_date
+        type: datetime
+        required: true
+
+      - source_key: lease
+        db_column: lease_time
+        type: string
+        required: true
+
+      - source_key: timezone
+        db_column: region       # timezone maps to region per decision
+        type: string
+        required: false
+        default: "America/New York City"
+
+      # ── Metadata ────────────────────────────────────────────────────
+      - source_key: status
+        db_column: null          # Sheet status — not stored, we manage our own state
+        type: string
+        required: false
+
+      - source_key: evaluated_on
+        db_column: null          # Sheet metadata — not stored
+        type: datetime
+        required: false
+
+      - source_key: timestamp
+        db_column: null          # Form submission time — not stored (we use created_at)
+        type: datetime
+        required: false
+
+      - source_key: is_extension
+        db_column: null          # → extras JSONB
+        type: string
+        required: false
+        default: "New Request"
+
+      # ── Fields that go to extras JSONB ──────────────────────────────
+      - source_key: statement_of_work
+        db_column: null
+        type: string
+        required: false
+        default: ""
+
+      - source_key: application_type
+        db_column: null
+        type: string
+        required: false
+        default: ""
+
+      - source_key: deployment_option
+        db_column: null
+        type: string
+        required: false
+        default: ""
+
+      - source_key: ai_deployment_option
+        db_column: null
+        type: string
+        required: false
+        default: ""
+
+      - source_key: ai_size
+        db_column: null
+        type: string
+        required: false
+        default: ""
+
+      - source_key: gpu_required
+        db_column: null
+        type: string
+        required: false
+        default: ""
+
+      - source_key: extension_challenges
+        db_column: null
+        type: string
+        required: false
+        default: ""
+
+      - source_key: extension_objectives
+        db_column: null
+        type: string
+        required: false
+        default: ""
+
+    # Auto-provision policy: all is_standard_criteria fields must match
+    # their standard_values for the request to be auto-provisioned.
+    # If any field has a value outside its standard_values, or if
+    # description contains keywords suggesting complexity, it's non-standard.
+    auto_provision_policy:
+      complexity_keywords:
+        - "gpu"
+        - "GPU"
+        - "bare metal"
+        - "baremetal"
+        - "custom"
+        - "assistance"
+        - "help"
+        - "troubleshooting"
