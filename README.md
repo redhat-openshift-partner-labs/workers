@@ -46,7 +46,7 @@ workers/
 │   ├── Containerfile
 │   └── pyproject.toml
 │
-├── day-one/                        # worker-day-one
+├── dayone/                         # worker-dayone
 │   ├── src/ tests/ k8s/
 │   ├── Containerfile
 │   └── pyproject.toml
@@ -75,7 +75,7 @@ workers/
 │   └── workflows/
 │       ├── ci-etl.yaml
 │       ├── ci-provisioning.yaml
-│       ├── ci-day-one.yaml
+│       ├── ci-dayone.yaml
 │       ├── ci-deprovision.yaml
 │       ├── ci-credentials.yaml
 │       ├── ci-notification.yaml
@@ -100,7 +100,7 @@ flowchart LR
 
     subgraph Core Pipeline
         PROV[worker-provisioning]
-        D1[worker-day-one]
+        D1[worker-dayone]
         D2[worker-day-two]
         DEPROV[worker-deprovision]
     end
@@ -166,7 +166,7 @@ workers/
 ### Add another worker later
 
 ```bash
-git sparse-checkout add day-one
+git sparse-checkout add dayone
 ```
 
 ### Work on everything
@@ -181,8 +181,8 @@ git sparse-checkout disable
 sparse-etl:
 	git sparse-checkout set etl commons-python schemas
 
-sparse-day-one:
-	git sparse-checkout set day-one commons-python schemas
+sparse-dayone:
+	git sparse-checkout set dayone commons-python schemas
 
 sparse-all:
 	git sparse-checkout disable
@@ -253,7 +253,7 @@ jobs:
 | `etl/src/transform.py` | Only `ci-etl.yaml` |
 | `commons-python/envelope.py` | All Python worker CIs (every workflow lists `commons-python/**`) |
 | `schemas/envelope.schema.json` | All worker CIs across languages (every workflow lists `schemas/**`) |
-| `day-one/src/worker.py` | Only `ci-day-one.yaml` |
+| `dayone/src/worker.py` | Only `ci-dayone.yaml` |
 | `etl/` + `provisioning/` in same PR | `ci-etl.yaml` + `ci-provisioning.yaml` |
 | `README.md` only | Nothing (no workflow matches) |
 
@@ -264,7 +264,7 @@ flowchart LR
         C["commons-python/**"]
         W_ETL["etl/**"]
         W_PROV["provisioning/**"]
-        W_D1["day-one/**"]
+        W_D1["dayone/**"]
         W_D2["day-two/**"]
         W_DEPROV["deprovision/**"]
         W_CRED["credentials/**"]
@@ -274,7 +274,7 @@ flowchart LR
     subgraph CI Workflows
         CI_ETL[ci-etl]
         CI_PROV[ci-provisioning]
-        CI_D1[ci-day-one]
+        CI_D1[ci-dayone]
         CI_D2[ci-day-two]
         CI_DEPROV[ci-deprovision]
         CI_CRED[ci-credentials]
@@ -338,7 +338,7 @@ flowchart BT
 
     ETL[etl/]
     PROV[provisioning/]
-    D1[day-one/]
+    D1[dayone/]
     D2[day-two/]
     DEPROV[deprovision/]
     CRED[credentials/]
@@ -436,7 +436,7 @@ feature/*  →  PR  →  develop  →  main
 - **`feature/commons-add-retry-helper`** — commons changes get their own branches.
 - PRs require passing CI for all affected workers (path filters handle this automatically).
 - `main` is always deployable.
-- Tags per worker for releases: `etl/v1.0.0`, `day-one/v1.0.0`.
+- Tags per worker for releases: `etl/v1.0.0`, `dayone/v1.0.0`.
 - See [`CONTRIBUTING.md`](CONTRIBUTING.md) for PR review rules, hotfix process, and develop → main promotion.
 
 ---

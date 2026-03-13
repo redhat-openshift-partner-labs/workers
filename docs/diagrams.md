@@ -19,7 +19,7 @@ flowchart LR
 
     subgraph Core Pipeline
         PROV[worker-provisioning]
-        D1[worker-day-one]
+        D1[worker-dayone]
         D2[worker-day-two]
         DEPROV[worker-deprovision]
     end
@@ -63,7 +63,7 @@ flowchart BT
 
     ETL[etl/]
     PROV[provisioning/]
-    D1[day-one/]
+    D1[dayone/]
     D2[day-two/]
     DEPROV[deprovision/]
     CRED[credentials/]
@@ -97,7 +97,7 @@ flowchart LR
         C["commons-python/**"]
         W_ETL["etl/**"]
         W_PROV["provisioning/**"]
-        W_D1["day-one/**"]
+        W_D1["dayone/**"]
         W_D2["day-two/**"]
         W_DEPROV["deprovision/**"]
         W_CRED["credentials/**"]
@@ -107,7 +107,7 @@ flowchart LR
     subgraph CI Workflows
         CI_ETL[ci-etl]
         CI_PROV[ci-provisioning]
-        CI_D1[ci-day-one]
+        CI_D1[ci-dayone]
         CI_D2[ci-day-two]
         CI_DEPROV[ci-deprovision]
         CI_CRED[ci-credentials]
