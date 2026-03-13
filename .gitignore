@@ -62,6 +62,7 @@ dmypy.json
 
 # Temporary files
 tmp/
+docs/plans
 *.tmp
 *.bak
 
