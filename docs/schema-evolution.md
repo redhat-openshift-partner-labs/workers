@@ -37,21 +37,29 @@ These changes require the versioned migration process below:
 
 ## Versioning Convention
 
-Schemas use a directory-based version when a breaking change is needed:
+Schemas use **semantic versioning** (`major.minor.patch`):
+
+- **Minor bump** — backward-compatible changes (adding optional fields). No migration needed.
+- **Major bump** — breaking changes (removing/renaming required fields, type changes). Requires the migration playbook below.
+- **Patch bump** — documentation-only changes, description clarifications. No runtime impact.
+
+The `version` field in the **MessageEnvelope** tells consumers which schema version to validate against. Each payload's `$id` also includes the version:
 
 ```
-schemas/
-├── envelope.schema.json              # current (v1 implied)
-└── payloads/
-    ├── intake.raw.schema.json        # current
-    └── intake.raw.v2.schema.json     # breaking revision
+https://schemas.openshiftpartnerlabs.io/payloads/intake.raw/v1
+https://schemas.openshiftpartnerlabs.io/payloads/intake.raw/v2   ← breaking revision
 ```
 
-The envelope's `schema_version` field (if present) or the payload's `$id` / filename tracks which version a message conforms to.
+When a breaking change is needed, the new schema file coexists alongside the original:
 
-> **Alternative considered:** Subdirectories (`v1/`, `v2/`). Rejected because
-> most schemas evolve independently — a single schema getting a v2 shouldn't
-> force a directory restructure for all others.
+```
+schemas/payloads/
+├── intake.raw.schema.json        # v1 (current)
+└── intake.raw.v2.schema.json     # v2 (breaking revision)
+```
+
+> **Why not subdirectories (`v1/`, `v2/`)?** Most schemas evolve independently.
+> A single schema getting a v2 shouldn't force a directory restructure for all others.
 
 ---
 
