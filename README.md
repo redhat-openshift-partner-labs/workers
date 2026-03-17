@@ -46,7 +46,7 @@ workers/
 │   ├── Containerfile
 │   └── pyproject.toml
 │
-├── dayone/                         # worker-dayone
+├── day-one/                        # worker-day-one
 │   ├── src/ tests/ k8s/
 │   ├── Containerfile
 │   └── pyproject.toml
@@ -75,7 +75,7 @@ workers/
 │   └── workflows/
 │       ├── ci-etl.yaml
 │       ├── ci-provisioning.yaml
-│       ├── ci-dayone.yaml
+│       ├── ci-day-one.yaml
 │       ├── ci-deprovision.yaml
 │       ├── ci-credentials.yaml
 │       ├── ci-notification.yaml
@@ -89,45 +89,48 @@ workers/
 
 ### Message Flow
 
-How workers connect through RabbitMQ queues:
+How workers connect through RabbitMQ queues. **Scribe** (saga orchestrator, separate repo) sits at the center — all routing decisions flow through it. Workers in this monorepo are highlighted.
 
 ```mermaid
 flowchart LR
     subgraph Intake
-        API([API / Source])
-        ETL[worker-etl]
+        N8N([n8n]) -- intake.raw --> ETL[worker-etl]
     end
 
-    subgraph Core Pipeline
-        PROV[worker-provisioning]
-        D1[worker-dayone]
-        D2[worker-day-two]
-        DEPROV[worker-deprovision]
+    ETL -- intake.normalized --> SCRIBE((scribe))
+
+    subgraph Dispatch
+        SCRIBE -- notify / review --> MSGR([messenger])
+        MSGR -- provision / review --> SCRIBE
     end
 
-    subgraph Support
-        CRED[worker-credentials]
-        NOTIF[worker-notification]
+    subgraph Provisioning
+        SCRIBE -- generate-manifests --> PROV[worker-provisioning]
+        PROV -- manifests-complete --> SCRIBE
+        PW([provision-watcher]) -- cluster-ready --> SCRIBE
     end
 
-    API -- intake.raw --> ETL
-    ETL -- intake.normalized --> ETL
-    ETL -- intake.dispatch.provision --> PROV
-    PROV -- lab.provision.* --> D1
-    D1 -- lab.day1.* --> D2
-    D2 -- lab.day2.* --> DEPROV
+    subgraph Day-One
+        SCRIBE -- day1.orchestrate --> D1[worker-day-one]
+        D1 -- day1.complete --> SCRIBE
+    end
 
-    PROV -- credentials.request --> CRED
-    CRED -- credentials.result --> PROV
+    subgraph Handoff
+        SCRIBE -- credentials.create --> CRED[worker-credentials]
+        CRED -- credentials.complete --> SCRIBE
+        SCRIBE -- welcome-email.send --> NOTIF[worker-notification]
+        NOTIF -- welcome-email.sent --> SCRIBE
+    end
 
-    ETL-.- notification.* -.-> NOTIF
-    PROV-.- notification.* -.-> NOTIF
-    D1-.- notification.* -.-> NOTIF
-    DEPROV-.- notification.* -.-> NOTIF
+    subgraph Deprovision
+        SCRIBE -- deprovision.requested --> DEPROV[worker-deprovision]
+        DEPROV -- archive-complete --> SCRIBE
+        DW([deprovision-watcher]) -- cluster-removed --> SCRIBE
+    end
 ```
 
-> **Solid arrows** = primary pipeline. **Dashed** = async side-channels.
-> Queue names are illustrative — see `schemas/payloads/` for the full list.
+> Workers in **rectangles** live in this monorepo. Components in **rounded boxes** are external.
+> Queue names are abbreviated — see [`docs/architecture.md`](docs/architecture.md) for the full component map and state machine.
 
 ---
 
@@ -166,7 +169,7 @@ workers/
 ### Add another worker later
 
 ```bash
-git sparse-checkout add dayone
+git sparse-checkout add day-one
 ```
 
 ### Work on everything
@@ -181,8 +184,8 @@ git sparse-checkout disable
 sparse-etl:
 	git sparse-checkout set etl commons-python schemas
 
-sparse-dayone:
-	git sparse-checkout set dayone commons-python schemas
+sparse-day-one:
+	git sparse-checkout set day-one commons-python schemas
 
 sparse-all:
 	git sparse-checkout disable
@@ -253,7 +256,7 @@ jobs:
 | `etl/src/transform.py` | Only `ci-etl.yaml` |
 | `commons-python/envelope.py` | All Python worker CIs (every workflow lists `commons-python/**`) |
 | `schemas/envelope.schema.json` | All worker CIs across languages (every workflow lists `schemas/**`) |
-| `dayone/src/worker.py` | Only `ci-dayone.yaml` |
+| `day-one/src/worker.py` | Only `ci-day-one.yaml` |
 | `etl/` + `provisioning/` in same PR | `ci-etl.yaml` + `ci-provisioning.yaml` |
 | `README.md` only | Nothing (no workflow matches) |
 
@@ -264,7 +267,7 @@ flowchart LR
         C["commons-python/**"]
         W_ETL["etl/**"]
         W_PROV["provisioning/**"]
-        W_D1["dayone/**"]
+        W_D1["day-one/**"]
         W_D2["day-two/**"]
         W_DEPROV["deprovision/**"]
         W_CRED["credentials/**"]
@@ -274,7 +277,7 @@ flowchart LR
     subgraph CI Workflows
         CI_ETL[ci-etl]
         CI_PROV[ci-provisioning]
-        CI_D1[ci-dayone]
+        CI_D1[ci-day-one]
         CI_D2[ci-day-two]
         CI_DEPROV[ci-deprovision]
         CI_CRED[ci-credentials]
@@ -338,7 +341,7 @@ flowchart BT
 
     ETL[etl/]
     PROV[provisioning/]
-    D1[dayone/]
+    D1[day-one/]
     D2[day-two/]
     DEPROV[deprovision/]
     CRED[credentials/]
@@ -348,10 +351,10 @@ flowchart BT
     CG -.->|will implement| SCHEMAS
 
     ETL --> CP
-    PROV --> CG
+    PROV --> CP
     D1 --> CP
-    D2 --> CG
-    DEPROV --> CG
+    D2 --> CP
+    DEPROV --> CP
     CRED --> CP
     NOTIF --> CP
 ```
@@ -436,7 +439,7 @@ feature/*  →  PR  →  develop  →  main
 - **`feature/commons-add-retry-helper`** — commons changes get their own branches.
 - PRs require passing CI for all affected workers (path filters handle this automatically).
 - `main` is always deployable.
-- Tags per worker for releases: `etl/v1.0.0`, `dayone/v1.0.0`.
+- Tags per worker for releases: `etl/v1.0.0`, `day-one/v1.0.0`.
 - See [`CONTRIBUTING.md`](CONTRIBUTING.md) for PR review rules, hotfix process, and develop → main promotion.
 
 ---
@@ -457,9 +460,10 @@ feature/*  →  PR  →  develop  →  main
 
 | Document | What it covers |
 |---|---|
+| [`docs/architecture.md`](docs/architecture.md) | Full system architecture: component map, state machine, scribe orchestration, hub-native model |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Local dev setup, running workers, PR conventions, adding a new worker |
 | [`docs/deployment.md`](docs/deployment.md) | CD pipeline, k8s manifests, image tagging, environment promotion |
 | [`docs/schema-evolution.md`](docs/schema-evolution.md) | Schema versioning policy, breaking changes, migration playbook |
 | [`schemas/README.md`](schemas/README.md) | Adding payload schemas, validation tooling, contract tests |
 | [`commons-python/README.md`](commons-python/README.md) | Commons API, envelope usage, RabbitMQ helpers |
-| [`docs/diagrams.md`](docs/diagrams.md) | All architecture diagrams in one page (message flow, dependencies, CI triggers, deploy pipeline) |
+| [`docs/diagrams.md`](docs/diagrams.md) | All diagrams in one page (message flow, state machine, dependencies, CI, deploy) |
