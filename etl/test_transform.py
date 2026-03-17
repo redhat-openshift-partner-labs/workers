@@ -6,12 +6,12 @@ Uses the actual sample payload structure from the Google Sheet.
 import pytest
 from pathlib import Path
 
-from src.schema import load_schema
-from src.transform import transform, TransformError
+from .schema import load_schema
+from .transform import transform, TransformError
 
 
 # Load schema from the k8s ConfigMap file
-SCHEMA_PATH = Path(__file__).parent.parent / "k8s" / "configmap-etl-schema.yaml"
+SCHEMA_PATH = Path(__file__).parent.parent / "etl" / "configmap-etl-schema.yaml"
 
 
 def _load_test_schema():
