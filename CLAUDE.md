@@ -11,7 +11,7 @@ workers/
 ├── commons-python/     # Shared Python utilities (envelope, rabbitmq, config)
 ├── schemas/            # JSON Schema definitions (source of truth)
 ├── etl/                # ETL worker - intake data transformation
-├── dayone/             # Day One worker - cluster initialization scripts
+├── day-one/             # Day One worker - cluster initialization scripts
 └── docs/               # Architectural documentation
 ```
 
@@ -62,7 +62,7 @@ API → intake.raw → [ETL] → intake.normalized → [Provisioning] → lab.pr
 - **Schema**: YAML-driven field mappings in ConfigMap (`/etc/etl-schema/schema.yaml`)
 - **See**: `etl/CLAUDE.md` for detailed implementation docs
 
-### Day One Worker (`dayone/`)
+### Day One Worker (`day-one/`)
 - **Current state**: Operational scripts only (not a full worker yet)
 - **Scripts**: `scripts/disable-insights.sh` - Disables Red Hat Insights in OpenShift
 
