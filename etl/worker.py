@@ -25,6 +25,12 @@ import pika
 
 from .config import Settings
 from .schema import load_schema, ETLSchema
+from .schema_registry import (
+    SchemaRegistry,
+    UnknownPayloadTypeError,
+    load_schema_registry,
+    load_single_schema_as_registry,
+)
 from .transform import transform, TransformError
 from .envelope import build_envelope, parse_envelope
 
@@ -41,9 +47,9 @@ class ETLWorker:
     or intake.raw.failed. One message at a time (prefetch=1).
     """
 
-    def __init__(self, settings: Settings, schema: ETLSchema):
+    def __init__(self, settings: Settings, registry: SchemaRegistry):
         self.settings = settings
-        self.schema = schema
+        self.registry = registry
         self._connection: pika.BlockingConnection | None = None
         self._channel: pika.channel.Channel | None = None
         self._shutting_down = False
@@ -95,11 +101,13 @@ class ETLWorker:
           5. ACK the original message (always — failures go to failed queue, not redelivered)
         """
         incoming = None
+        payload_type = None
         try:
             incoming = parse_envelope(body)
             payload = incoming.get("payload", {})
             correlation_id = incoming.get("correlation_id")
             causation_id = incoming.get("event_id")  # This message caused the next one
+            payload_type = incoming.get("payload_type")  # For schema routing
 
             # The raw payload has form_response_id and sheet_row from the intake.raw schema
             raw_body = payload.get("sheet_row", payload)
@@ -107,13 +115,17 @@ class ETLWorker:
             sheet_row_number = payload.get("sheet_row_number")
 
             log.info(
-                "Processing form_response_id=%s row=%s",
+                "Processing form_response_id=%s row=%s payload_type=%s",
                 form_response_id,
                 sheet_row_number,
+                payload_type or "(default)",
             )
 
+            # ── Schema lookup ─────────────────────────────────────────
+            schema = self.registry.get(payload_type)
+
             # ── Transform ─────────────────────────────────────────────
-            result = transform(self.schema, raw_body)
+            result = transform(schema, raw_body)
 
             # ── Build normalized payload ──────────────────────────────
             normalized_payload = {
@@ -160,6 +172,17 @@ class ETLWorker:
                 properties=pika.BasicProperties(delivery_mode=2),  # persistent
             )
             log.info("Published normalized payload for cluster_name=%s", normalized_payload["cluster_name"])
+
+        except UnknownPayloadTypeError as e:
+            # Unknown payload_type — publish to failed queue
+            log.warning("Unknown payload_type: %s", e.payload_type)
+            self._publish_failure(
+                channel=channel,
+                error=e.to_dict(),
+                raw_payload=incoming.get("payload", {}) if incoming else {},
+                correlation_id=incoming.get("correlation_id") if incoming else None,
+                causation_id=incoming.get("event_id") if incoming else None,
+            )
 
         except TransformError as e:
             # Structured validation failure — publish to failed queue
@@ -270,13 +293,40 @@ class ETLWorker:
 
 
 def main() -> None:
+    from pathlib import Path
+
     settings = Settings()
 
-    log.info("Loading schema from %s", settings.schema_path)
-    schema = load_schema(settings.schema_path)
-    log.info("Schema v%s loaded — %d fields, %d generated", schema.version, len(schema.fields), len(schema.generated_fields))
+    # Load schema registry (multi-schema or single-schema fallback)
+    schema_dir = Path(settings.schema_dir)
+    if schema_dir.is_dir() and any(schema_dir.glob("*.yaml")):
+        log.info("Loading schemas from directory: %s", settings.schema_dir)
+        registry = load_schema_registry(schema_dir, settings.default_payload_type)
+        log.info(
+            "Loaded %d schema(s): %s (default: %s)",
+            len(registry.available_types),
+            ", ".join(registry.available_types),
+            settings.default_payload_type,
+        )
+    elif settings.schema_path:
+        # Backward compatibility: single schema file
+        log.info("Loading single schema from: %s (deprecated)", settings.schema_path)
+        registry = load_single_schema_as_registry(
+            Path(settings.schema_path), settings.default_payload_type
+        )
+        log.info(
+            "Schema v%s loaded as '%s'",
+            registry.get(None).version,
+            settings.default_payload_type,
+        )
+    else:
+        log.error(
+            "No schemas found. Set ETL_SCHEMA_DIR to a directory with *.yaml files, "
+            "or ETL_SCHEMA_PATH to a single schema file."
+        )
+        raise SystemExit(1)
 
-    worker = ETLWorker(settings, schema)
+    worker = ETLWorker(settings, registry)
 
     # Graceful shutdown on SIGTERM (k8s pod termination) and SIGINT (ctrl+c)
     signal.signal(signal.SIGTERM, worker.shutdown)

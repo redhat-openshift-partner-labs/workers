@@ -1,21 +1,22 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: etl-field-schema
+  name: etl-schemas
   namespace: opl-system
   labels:
     app: worker-etl
     component: schema
 data:
   # ──────────────────────────────────────────────────────────────────────
-  # ETL Field Schema
+  # ETL Field Schemas
   #
-  # Defines how raw Google Sheet fields (Tab 2 custom headers) map to
-  # the canonical DB schema. The ETL worker loads this at startup and
-  # validates/transforms each incoming payload against it.
+  # Each key is a schema file named after its payload_type.
+  # The ETL worker routes messages to schemas based on the envelope's
+  # `payload_type` field. Messages without payload_type use the default
+  # (configured via ETL_DEFAULT_PAYLOAD_TYPE, defaults to google-sheets-v1).
   #
   # Field definition:
-  #   source_key:   Key name as it arrives from AppScript (Tab 2 header)
+  #   source_key:   Key name as it arrives from the source system
   #   db_column:    Target column in the labs table (null = goes to extras JSONB)
   #   type:         Expected type after coercion (string, int, float, bool, datetime, email)
   #   required:     Whether the field must be present and non-empty
@@ -23,7 +24,9 @@ data:
   #   transform:    Optional transformation to apply (split_name_first, split_name_last, etc.)
   #   is_standard_criteria: Whether this field is evaluated for auto-provision policy
   # ──────────────────────────────────────────────────────────────────────
-  schema.yaml: |
+
+  # ── Google Sheets schema (Tab 2 custom headers from AppScript) ────────
+  google-sheets-v1.yaml: |
     version: "1.0.0"
 
     # Fields that the ETL worker generates (not from the Sheet)

@@ -19,8 +19,14 @@ class Settings(BaseSettings):
     publish_queue: str = "intake.normalized"
     failed_queue: str = "intake.raw.failed"
 
-    # Schema ConfigMap path (mounted as a volume in k8s)
-    schema_path: str = "/etc/etl-schema/schema.yaml"
+    # Schema configuration
+    # Multi-schema: directory containing *.yaml schema files (preferred)
+    schema_dir: str = "/etc/etl-schemas"
+    # Default payload_type when message envelope lacks one
+    default_payload_type: str = "google-sheets-v1"
+    # Deprecated: single schema file path (for backward compatibility)
+    # If set and schema_dir is empty/missing, falls back to this
+    schema_path: str | None = None
 
     # Worker identity (used in message envelope `source` field)
     source_id: str = "worker-etl"

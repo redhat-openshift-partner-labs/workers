@@ -11,15 +11,23 @@ from .transform import transform, TransformError
 
 
 # Load schema from the k8s ConfigMap file
-SCHEMA_PATH = Path(__file__).parent.parent / "etl" / "configmap-etl-schema.yaml"
+CONFIGMAP_PATH = Path(__file__).parent / "configmap-etl-schema.yaml"
+# Also try standalone schema file for local dev
+SCHEMA_FILE_PATH = Path(__file__).parent / "schemas" / "google-sheets-v1.yaml"
 
 
 def _load_test_schema():
-    """Parse just the schema.yaml content from the ConfigMap."""
+    """Load the Google Sheets schema for testing."""
     import yaml
-    raw = yaml.safe_load(SCHEMA_PATH.read_text())
-    # ConfigMap wraps it in data.schema.yaml — for tests, parse the inner YAML
-    inner_yaml = raw.get("data", {}).get("schema.yaml", "")
+
+    # Prefer standalone schema file if it exists
+    if SCHEMA_FILE_PATH.exists():
+        return load_schema(SCHEMA_FILE_PATH)
+
+    # Fall back to extracting from ConfigMap
+    raw = yaml.safe_load(CONFIGMAP_PATH.read_text())
+    # ConfigMap wraps it in data.google-sheets-v1.yaml — parse the inner YAML
+    inner_yaml = raw.get("data", {}).get("google-sheets-v1.yaml", "")
     # Write to a temp file and load
     tmp = Path("/tmp/test-schema.yaml")
     tmp.write_text(inner_yaml)
