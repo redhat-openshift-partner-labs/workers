@@ -368,6 +368,11 @@ dev = [
     { name = "pytest-cov" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "worker-etl", extra = ["dev"] },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "pika", specifier = ">=1.3.2" },
@@ -378,3 +383,6 @@ requires-dist = [
     { name = "pyyaml", specifier = ">=6.0" },
 ]
 provides-extras = ["dev"]
+
+[package.metadata.requires-dev]
+dev = [{ name = "worker-etl", extras = ["dev"], virtual = "." }]

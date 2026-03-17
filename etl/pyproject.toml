@@ -15,3 +15,11 @@ dev = [
     "pytest>=8.0",
     "pytest-cov>=5.0",
 ]
+
+[dependency-groups]
+dev = [
+    "worker-etl[dev]",
+]
+
+[tool.uv.sources]
+worker-etl = { workspace = true }
