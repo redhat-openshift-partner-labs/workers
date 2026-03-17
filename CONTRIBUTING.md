@@ -92,16 +92,16 @@ cd etl && pytest tests/ -v
 
 The root `Makefile` provides convenience targets. Pattern:
 
-| Target | What it does |
-|---|---|
-| `make sparse-{worker}` | Sparse checkout for that worker + commons + schemas |
-| `make sparse-all` | Disable sparse checkout (full repo) |
-| `make test-{worker}` | Run pytest for that worker |
-| `make test-all` | Run tests for all workers |
-| `make build-{worker}` | Podman build from repo root |
-| `make build-all` | Podman build for all workers |
+| Target | What it does                                          |
+|---|-------------------------------------------------------|
+| `make sparse-{worker}` | Sparse checkout for that worker + commons + schemas   |
+| `make sparse-all` | Disable sparse checkout (full repo)                   |
+| `make test-{worker}` | Run pytest for that worker                            |
+| `make test-all` | Run tests for all workers                             |
+| `make build-{worker}` | Podman build from repo root                           |
+| `make build-all` | Podman build for all workers                          |
 | `make run-{worker}` | Run worker locally (requires `.env` + local RabbitMQ) |
-| `make lint` | Run linter across all Python code |
+| `make lint` | Run linter across all Python code                     |
 
 ---
 
@@ -225,5 +225,5 @@ Add the worker to the repo structure tree and any relevant tables.
 - **Logging:** Use structured logging (JSON to stdout). All workers use Python's `logging` module with a shared formatter from `commons`.
 - **Config:** All configuration via environment variables, parsed by `pydantic-settings`. No config files baked into images.
 - **Error handling:** Workers must not crash on transient RabbitMQ failures. Use the retry/reconnect helpers in `commons/rabbitmq.py`.
-- **Dead-letter queues:** Every queue has a corresponding DLQ. Messages that fail after max retries are routed to the DLQ. See the RabbitMQ helpers in `commons` for the convention.
+- **Dead-letter queues:** DLQs are scoped by domain (`dlq.intake`, `dlq.provision`, `dlq.day1`, etc.) with a `dlq.generic` catch-all. Messages that fail after max retries are routed to the appropriate DLQ. See the RabbitMQ helpers in `commons` and [`docs/architecture.md`](docs/architecture.md) for naming conventions.
 - **Tests:** Minimum expectation is unit tests for all transform/business logic. Integration tests using a local RabbitMQ (via `podman compose`) are encouraged.
