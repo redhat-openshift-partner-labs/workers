@@ -10,7 +10,7 @@ labels:
 resources:
   - namespace.yaml
   - serviceaccount.yaml
-  - secret.yaml
+  - secrets.yaml
   - configmap-env.yaml
   - configmap-etl-schema.yaml
   - deployment.yaml
