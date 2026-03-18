@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: worker-etl-env
+  namespace: opl-system
+  labels:
+    app.kubernetes.io/name: worker-etl
+    app.kubernetes.io/component: etl
+    app.kubernetes.io/part-of: openshift-partner-labs
+data:
+  ETL_RABBITMQ_HOST: "rabbitmq.opl-system.svc.cluster.local"
+  ETL_RABBITMQ_PORT: "5672"
+  ETL_RABBITMQ_VHOST: "/"
+  ETL_CONSUME_QUEUE: "intake.raw"
+  ETL_PUBLISH_QUEUE: "intake.normalized"
+  ETL_FAILED_QUEUE: "intake.raw.failed"
+  ETL_SCHEMA_DIR: "/etc/etl-schemas"
+  ETL_DEFAULT_PAYLOAD_TYPE: "google-sheets-v1"
+  ETL_SOURCE_ID: "worker-etl"
+  ETL_PREFETCH_COUNT: "1"
