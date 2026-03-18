@@ -63,6 +63,7 @@ etl/
 ├── transform.py            # Core ETL: validation, coercion, field mapping
 ├── schema.py               # Schema loading (ETLSchema, FieldDef dataclasses)
 ├── envelope.py             # Message envelope build/parse helpers
+├── health.py               # HTTP health check server for Kubernetes probes
 ├── test_transform.py       # Unit tests for transform pipeline
 ├── configmap-etl-schema.yaml  # K8s ConfigMap with field definitions
 ├── pyproject.toml          # Package dependencies
@@ -81,6 +82,7 @@ etl/
 | `schema.py` | Parse schema YAML, build lookup structures |
 | `transform.py` | Validate, coerce, transform raw payloads |
 | `envelope.py` | Build/parse message envelopes for RabbitMQ |
+| `health.py` | HTTP health endpoints (`/healthz`, `/readyz`) for Kubernetes |
 | `worker.py` | RabbitMQ connection, message routing, error handling |
 
 ---

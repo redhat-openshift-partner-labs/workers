@@ -125,6 +125,7 @@ All configuration via environment variables (12-factor). Variables use the `ETL_
 | `ETL_SCHEMA_PATH` | `/etc/etl-schema/schema.yaml` | Path to schema YAML |
 | `ETL_SOURCE_ID` | `worker-etl` | Worker identity in message envelopes |
 | `ETL_PREFETCH_COUNT` | `1` | Messages to prefetch (1 = one at a time) |
+| `ETL_HEALTH_PORT` | `8080` | HTTP health check server port |
 
 ### Schema ConfigMap
 
@@ -205,7 +206,14 @@ See [Deployment Guide](../docs/deployment.md) for:
 
 ### Health Checks
 
-The worker uses RabbitMQ heartbeats (60s interval) to maintain connection health. For Kubernetes liveness/readiness, check the RabbitMQ connection status.
+The worker exposes HTTP health endpoints on port 8080 (configurable via `ETL_HEALTH_PORT`):
+
+| Endpoint | Purpose | Returns 200 when |
+|----------|---------|------------------|
+| `/healthz` | Liveness probe | Server is running |
+| `/readyz` | Readiness probe | Connected to RabbitMQ and ready to consume |
+
+The worker also uses RabbitMQ heartbeats (60s interval) to detect connection issues.
 
 ## Error Handling
 
@@ -250,6 +258,7 @@ etl/
 ├── transform.py       # Core ETL logic
 ├── schema.py          # Schema loading
 ├── envelope.py        # Message envelope helpers
+├── health.py          # HTTP health check server
 ├── test_transform.py  # Unit tests
 └── docs/              # Documentation
 ```

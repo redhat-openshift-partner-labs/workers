@@ -190,3 +190,4 @@ All variables use the `ETL_` prefix (configured in `Settings.model_config`):
 | `ETL_SCHEMA_PATH` | `/etc/etl-schema/schema.yaml` | Path to schema YAML |
 | `ETL_SOURCE_ID` | `worker-etl` | Worker identity in message envelopes |
 | `ETL_PREFETCH_COUNT` | `1` | Messages to prefetch (1 = process one at a time) |
+| `ETL_HEALTH_PORT` | `8080` | HTTP health check server port |

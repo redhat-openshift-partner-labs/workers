@@ -314,6 +314,34 @@ For the worker, point to a plain YAML file (not ConfigMap wrapper).
    kubectl exec worker-etl-xxx -- env | grep ETL_
    ```
 
+### Health Probe Failures
+
+**Symptom**: Pod shows `0/1` ready, enters CrashLoopBackOff, but logs show worker is processing messages.
+
+**Cause**: Kubernetes health probes are failing.
+
+**Solutions**:
+
+1. **Verify health endpoint is accessible**:
+   ```bash
+   kubectl exec worker-etl-xxx -- curl -s localhost:8080/healthz
+   kubectl exec worker-etl-xxx -- curl -s localhost:8080/readyz
+   ```
+
+2. **Check probe configuration**: Ensure deployment uses HTTP probes on port 8080:
+   ```yaml
+   livenessProbe:
+     httpGet:
+       path: /healthz
+       port: 8080
+   readinessProbe:
+     httpGet:
+       path: /readyz
+       port: 8080
+   ```
+
+3. **Check for port conflicts**: Ensure `ETL_HEALTH_PORT` (default 8080) isn't already in use.
+
 ### Import Errors
 
 **Symptom**:
