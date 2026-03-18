@@ -31,5 +31,5 @@ patches:
         value: "rabbitmq.queue.svc.cluster.local"
 
 images:
-  - name: quay.io/opl/worker-etl
+  - name: quay.io/rhopl/worker-etl
     newTag: dev

@@ -45,5 +45,5 @@ patches:
         value: "5"
 
 images:
-  - name: quay.io/opl/worker-etl
+  - name: quay.io/rhopl/worker-etl
     newTag: latest
