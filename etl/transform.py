@@ -14,7 +14,7 @@ import hashlib
 from datetime import datetime, timezone
 from typing import Any
 
-from .schema import ETLSchema, FieldDef
+from schema import ETLSchema, FieldDef
 
 
 class TransformError(Exception):

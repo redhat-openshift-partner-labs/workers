@@ -11,8 +11,8 @@ import pytest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from .schema_registry import load_schema_registry, UnknownPayloadTypeError
-from .transform import transform
+from schema_registry import load_schema_registry, UnknownPayloadTypeError
+from transform import transform
 
 
 # Minimal schema for Google Sheets (requires company_name)
@@ -93,7 +93,7 @@ class TestPayloadTypeRouting:
         # Google Sheets payload (has company_name, not account_name)
         payload = {"company_name": "Acme Corp", "project_name": "demo"}
 
-        from .transform import TransformError
+        from transform import TransformError
 
         schema = multi_schema_registry.get("salesforce-v1")
         with pytest.raises(TransformError) as exc_info:

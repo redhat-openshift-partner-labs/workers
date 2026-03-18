@@ -9,7 +9,7 @@ Follows the worker contract:
   - Horizontally scalable (N replicas competing for messages)
 
 Usage:
-  python -m src.worker
+  python -m worker
 
 Environment variables (see config.py):
   ETL_RABBITMQ_HOST, ETL_RABBITMQ_PORT, ETL_RABBITMQ_USER, etc.
@@ -23,16 +23,16 @@ import sys
 
 import pika
 
-from .config import Settings
-from .schema import load_schema, ETLSchema
-from .schema_registry import (
+from config import Settings
+from schema import load_schema, ETLSchema
+from schema_registry import (
     SchemaRegistry,
     UnknownPayloadTypeError,
     load_schema_registry,
     load_single_schema_as_registry,
 )
-from .transform import transform, TransformError
-from .envelope import build_envelope, parse_envelope
+from transform import transform, TransformError
+from envelope import build_envelope, parse_envelope
 
 logging.basicConfig(
     level=logging.INFO,

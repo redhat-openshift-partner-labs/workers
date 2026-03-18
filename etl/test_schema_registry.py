@@ -6,12 +6,12 @@ import pytest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from .schema_registry import (
+from schema_registry import (
     SchemaRegistry,
     UnknownPayloadTypeError,
     load_schema_registry,
 )
-from .schema import ETLSchema
+from schema import ETLSchema
 
 
 # Minimal schema YAML for testing

@@ -6,8 +6,8 @@ Uses the actual sample payload structure from the Google Sheet.
 import pytest
 from pathlib import Path
 
-from .schema import load_schema
-from .transform import transform, TransformError
+from schema import load_schema
+from transform import transform, TransformError
 
 
 # Load schema from the k8s ConfigMap file

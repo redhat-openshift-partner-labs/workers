@@ -10,7 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from .schema import ETLSchema, load_schema
+from schema import ETLSchema, load_schema
 
 
 class UnknownPayloadTypeError(Exception):
