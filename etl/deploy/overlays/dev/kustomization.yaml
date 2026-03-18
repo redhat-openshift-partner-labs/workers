@@ -28,7 +28,7 @@ patches:
     patch: |
       - op: replace
         path: /data/ETL_RABBITMQ_HOST
-        value: "rabbitmq.queue.svc.cluster.local"
+        value: "queue.openshift-operators.svc.cluster.local"
 
 images:
   - name: quay.io/rhopl/worker-etl
