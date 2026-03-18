@@ -35,4 +35,7 @@ class Settings(BaseSettings):
     # 1 = process one at a time. Safe default for correctness.
     prefetch_count: int = 1
 
+    # Health check server port for Kubernetes probes
+    health_port: int = 8080
+
     model_config = {"env_prefix": "ETL_"}

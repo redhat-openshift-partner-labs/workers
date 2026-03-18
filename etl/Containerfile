@@ -7,7 +7,7 @@ COPY pyproject.toml .
 RUN pip install --no-cache-dir .
 
 # Copy worker source files
-COPY worker.py transform.py schema.py schema_registry.py envelope.py config.py __init__.py ./
+COPY worker.py transform.py schema.py schema_registry.py envelope.py config.py health.py __init__.py ./
 
 # OpenShift runs with arbitrary UID - ensure files are world-readable
 # and /app directory is accessible

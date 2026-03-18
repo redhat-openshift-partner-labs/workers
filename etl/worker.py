@@ -24,6 +24,7 @@ import sys
 import pika
 
 from config import Settings
+from health import HealthServer
 from schema import load_schema, ETLSchema
 from schema_registry import (
     SchemaRegistry,
@@ -53,6 +54,7 @@ class ETLWorker:
         self._connection: pika.BlockingConnection | None = None
         self._channel: pika.channel.Channel | None = None
         self._shutting_down = False
+        self._connected = False
 
     def connect(self) -> None:
         """Establish RabbitMQ connection and declare queues."""
@@ -81,6 +83,7 @@ class ETLWorker:
 
         # Process one message at a time — simple, correct, scalable via replicas
         self._channel.basic_qos(prefetch_count=self.settings.prefetch_count)
+        self._connected = True
         log.info("Connected to RabbitMQ at %s:%s", self.settings.rabbitmq_host, self.settings.rabbitmq_port)
 
     def _on_message(
@@ -183,6 +186,7 @@ class ETLWorker:
                 correlation_id=incoming.get("correlation_id") if incoming else None,
                 causation_id=incoming.get("event_id") if incoming else None,
             )
+            log.info("Published to failed queue: %s", self.settings.failed_queue)
 
         except TransformError as e:
             # Structured validation failure — publish to failed queue
@@ -194,6 +198,7 @@ class ETLWorker:
                 correlation_id=incoming.get("correlation_id") if incoming else None,
                 causation_id=incoming.get("event_id") if incoming else None,
             )
+            log.info("Published to failed queue: %s", self.settings.failed_queue)
 
         except Exception as e:
             # Unexpected error — still publish to failed queue, don't lose the message
@@ -205,11 +210,13 @@ class ETLWorker:
                 correlation_id=incoming.get("correlation_id") if incoming else None,
                 causation_id=incoming.get("event_id") if incoming else None,
             )
+            log.info("Published to failed queue: %s", self.settings.failed_queue)
 
         finally:
             # Always ACK — failures are routed to the failed queue, not redelivered.
             # This prevents poison messages from blocking the queue.
             channel.basic_ack(delivery_tag=method.delivery_tag)
+            log.debug("ACKed message delivery_tag=%s", method.delivery_tag)
 
     def _build_users_list(self, db_cols: dict) -> list[dict]:
         """Build the users array from primary + secondary contacts."""
@@ -282,11 +289,21 @@ class ETLWorker:
             if self._connection and self._connection.is_open:
                 self._connection.close()
 
+    def is_ready(self) -> bool:
+        """Check if worker is connected and ready to process messages."""
+        return (
+            self._connected
+            and self._connection is not None
+            and self._connection.is_open
+            and not self._shutting_down
+        )
+
     def shutdown(self, signum, frame) -> None:
         """Handle SIGTERM/SIGINT for graceful pod termination."""
         if self._shutting_down:
             return
         self._shutting_down = True
+        self._connected = False
         log.info("Received signal %s — stopping consumer...", signum)
         if self._channel:
             self._channel.stop_consuming()
@@ -328,11 +345,18 @@ def main() -> None:
 
     worker = ETLWorker(settings, registry)
 
+    # Start health check server for Kubernetes probes
+    health = HealthServer(port=settings.health_port, readiness_check=worker.is_ready)
+    health.start()
+
     # Graceful shutdown on SIGTERM (k8s pod termination) and SIGINT (ctrl+c)
     signal.signal(signal.SIGTERM, worker.shutdown)
     signal.signal(signal.SIGINT, worker.shutdown)
 
-    worker.run()
+    try:
+        worker.run()
+    finally:
+        health.stop()
 
 
 if __name__ == "__main__":
