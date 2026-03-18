@@ -1,7 +1,7 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-namespace: opl-system
+namespace: queue
 
 resources:
   - ../../base
@@ -36,12 +36,13 @@ patches:
             labelSelector:
               matchLabels:
                 app.kubernetes.io/name: worker-etl
-
-configMapGenerator:
-  - name: worker-etl-env
-    behavior: merge
-    literals:
-      - ETL_PREFETCH_COUNT=5
+  - target:
+      kind: ConfigMap
+      name: worker-etl-env
+    patch: |
+      - op: replace
+        path: /data/ETL_PREFETCH_COUNT
+        value: "5"
 
 images:
   - name: quay.io/opl/worker-etl

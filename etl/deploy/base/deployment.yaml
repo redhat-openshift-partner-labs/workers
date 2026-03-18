@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: worker-etl
-  namespace: opl-system
+  namespace: queue
   labels:
     app.kubernetes.io/name: worker-etl
     app.kubernetes.io/component: etl
