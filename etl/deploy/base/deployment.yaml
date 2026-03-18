@@ -33,7 +33,7 @@ spec:
 
       containers:
         - name: worker-etl
-          image: quay.io/opl/worker-etl:latest
+          image: quay.io/rhopl/worker-etl:dev
           imagePullPolicy: Always
 
           # Container-level security context for restricted SCC
@@ -108,3 +108,6 @@ spec:
 
       # Graceful shutdown for message processing
       terminationGracePeriodSeconds: 30
+
+      imagePullSecrets:
+        - name: worker-etl-pull-secret

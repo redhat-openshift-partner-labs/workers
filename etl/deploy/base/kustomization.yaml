@@ -13,5 +13,4 @@ resources:
   - secret.yaml
   - configmap-env.yaml
   - configmap-etl-schema.yaml
-  - networkpolicy.yaml
   - deployment.yaml
