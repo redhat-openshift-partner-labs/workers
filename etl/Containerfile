@@ -6,10 +6,11 @@ WORKDIR /app
 COPY pyproject.toml .
 RUN pip install --no-cache-dir . 
 
-COPY src/ src/
+# Copy worker source files
+COPY worker.py transform.py schema.py schema_registry.py envelope.py config.py __init__.py ./
 
 # Non-root user for security
 RUN useradd -r -s /bin/false etl
 USER etl
 
-ENTRYPOINT ["python", "-m", "src.worker"]
+ENTRYPOINT ["python", "-m", "worker"]
