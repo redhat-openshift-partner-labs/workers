@@ -1,16 +1,17 @@
 FROM python:3.12-slim
 
+# Create non-root user early for proper file ownership
+RUN useradd -r -s /bin/false -u 1001 etl
+
 WORKDIR /app
 
 # Install deps first for layer caching
 COPY pyproject.toml .
-RUN pip install --no-cache-dir . 
+RUN pip install --no-cache-dir .
 
-# Copy worker source files
-COPY worker.py transform.py schema.py schema_registry.py envelope.py config.py __init__.py ./
+# Copy worker source files with correct ownership
+COPY --chown=etl:etl worker.py transform.py schema.py schema_registry.py envelope.py config.py __init__.py ./
 
-# Non-root user for security
-RUN useradd -r -s /bin/false etl
 USER etl
 
 ENTRYPOINT ["python", "-m", "worker"]
