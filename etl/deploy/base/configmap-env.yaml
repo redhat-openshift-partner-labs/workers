@@ -2,15 +2,15 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: worker-etl-env
-  namespace: queue
+  namespace: workers
   labels:
     app.kubernetes.io/name: worker-etl
     app.kubernetes.io/component: etl
     app.kubernetes.io/part-of: openshift-partner-labs
 data:
-  ETL_RABBITMQ_HOST: "queue.openshift-operators.svc.cluster.local"
+  ETL_RABBITMQ_HOST: "queue.queue.svc.cluster.local"
   ETL_RABBITMQ_PORT: "5672"
-  ETL_RABBITMQ_VHOST: "/"
+  ETL_RABBITMQ_VHOST: "opl"
   ETL_CONSUME_QUEUE: "intake.raw"
   ETL_PUBLISH_QUEUE: "intake.normalized"
   ETL_FAILED_QUEUE: "intake.raw.failed"

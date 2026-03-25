@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: etl-schemas
-  namespace: queue
+  namespace: workers
   labels:
     app: worker-etl
     component: schema

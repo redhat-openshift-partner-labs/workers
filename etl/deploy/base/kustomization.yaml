@@ -1,14 +1,14 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-namespace: queue
+namespace: workers
 
 labels:
   - pairs:
       app.kubernetes.io/managed-by: kustomize
 
 resources:
-  - namespace.yaml
+#  - namespace.yaml
   - serviceaccount.yaml
   - secrets.yaml
   - configmap-env.yaml
