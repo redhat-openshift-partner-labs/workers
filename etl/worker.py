@@ -73,13 +73,13 @@ class ETLWorker:
         self._connection = pika.BlockingConnection(params)
         self._channel = self._connection.channel()
 
-        # Declare queues idempotently (durable = survives broker restart)
+        # Verify queues exist (passive=True checks without requiring configure permission)
         for queue in (
             self.settings.consume_queue,
             self.settings.publish_queue,
             self.settings.failed_queue,
         ):
-            self._channel.queue_declare(queue=queue, durable=True)
+            self._channel.queue_declare(queue=queue, passive=True)
 
         # Process one message at a time — simple, correct, scalable via replicas
         self._channel.basic_qos(prefetch_count=self.settings.prefetch_count)
