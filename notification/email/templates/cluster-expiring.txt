@@ -1,0 +1,32 @@
+Your OpenShift Partner Lab is Expiring Soon
+================================================================================
+
+ACTION REQUIRED
+
+Your OpenShift Partner Lab cluster $cluster_id is scheduled to expire on
+$expiration_date.
+
+What Happens Next
+================================================================================
+* Expiration Date: $expiration_date
+* Hibernation: The cluster will be hibernated for 48 hours after expiration
+* Deletion: After the hibernation period, the cluster will be permanently
+  deleted
+
+Need More Time?
+================================================================================
+If you need to extend your lab access, please contact your sponsor immediately.
+Extension requests must be approved before the expiration date.
+
+IMPORTANT: Please ensure you have saved all critical data from your cluster.
+Do not rely on the cluster to preserve your work after the expiration date.
+
+Cluster Information
+================================================================================
+Cluster ID: $cluster_id
+Console URL: $console_url
+
+If you have any questions or concerns, please reach out to your sponsor.
+
+================================================================================
+This is an automated message from OpenShift Partner Labs.

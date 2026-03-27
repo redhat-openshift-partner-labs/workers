@@ -1,0 +1,19 @@
+# Minimal RBAC - email service doesn't need Kubernetes API access
+# ServiceAccount is created for future extensibility
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: opl-email-service
+rules: []
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: opl-email-service
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: opl-email-service
+subjects:
+- kind: ServiceAccount
+  name: opl-email-service

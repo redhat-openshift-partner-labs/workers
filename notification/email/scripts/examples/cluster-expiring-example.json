@@ -1,0 +1,11 @@
+{
+  "to": ["partner@example.com"],
+  "subject": "OpenShift Partner Labs - Cluster Expiring Soon",
+  "template": "cluster-expiring",
+  "data": {
+    "cluster_id": "test-cluster-123",
+    "expiration_date": "2026-03-25",
+    "days_remaining": 7,
+    "console_url": "https://console-openshift-console.apps.test-cluster-123.openshiftpartnerlabs.com"
+  }
+}

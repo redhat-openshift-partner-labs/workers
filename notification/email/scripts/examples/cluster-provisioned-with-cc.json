@@ -1,0 +1,14 @@
+{
+  "to": ["jane.smith@partnercorp.com", "bob.jones@partnercorp.com"],
+  "cc": ["sponsor@redhat.com"],
+  "subject": "OpenShift Partner Labs - partnercorp-dev-01",
+  "template": "cluster-provisioned",
+  "data": {
+    "cluster_id": "partnercorp-dev-01",
+    "console_url": "https://console-openshift-console.apps.partnercorp-dev-01.openshiftpartnerlabs.com",
+    "credentials_url": "https://bin.apps.admin.openshiftpartnerlabs.com/?abc123#xyz789",
+    "credentials_password": "secret123",
+    "timezone": "Europe/London",
+    "expiration_date": "2026-06-30"
+  }
+}
