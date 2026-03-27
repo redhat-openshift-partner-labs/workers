@@ -1,0 +1,13 @@
+{
+  "to": ["partner@example.com"],
+  "subject": "OpenShift Partner Labs - acme-test-cluster",
+  "template": "cluster-provisioned",
+  "data": {
+    "cluster_id": "acme-test-cluster",
+    "console_url": "https://console-openshift-console.apps.acme-test-cluster.openshiftpartnerlabs.com",
+    "credentials_url": "https://bin.apps.admin.openshiftpartnerlabs.com/?68f2a19b#BG18SxrstTBNyv5cE3bwnaSERCMh8yPGKkh3TEy1Papg",
+    "credentials_password": "ooju5taigee7Xahdee9u",
+    "timezone": "America/New_York",
+    "expiration_date": "2026-05-15"
+  }
+}

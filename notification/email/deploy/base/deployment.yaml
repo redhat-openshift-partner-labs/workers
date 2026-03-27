@@ -1,0 +1,113 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opl-email-service
+  labels:
+    app: opl-email-service
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: opl-email-service
+  template:
+    metadata:
+      labels:
+        app: opl-email-service
+    spec:
+      serviceAccountName: opl-email-service
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: email-service
+        image: quay.io/opdev/opl-email-service:latest
+        imagePullPolicy: Always
+        env:
+        # RabbitMQ connection settings
+        - name: NOTIFICATION_RABBITMQ_HOST
+          valueFrom:
+            secretKeyRef:
+              name: rabbitmq-credentials
+              key: host
+        - name: NOTIFICATION_RABBITMQ_PORT
+          valueFrom:
+            secretKeyRef:
+              name: rabbitmq-credentials
+              key: port
+        - name: NOTIFICATION_RABBITMQ_USER
+          valueFrom:
+            secretKeyRef:
+              name: rabbitmq-credentials
+              key: user
+        - name: NOTIFICATION_RABBITMQ_PASS
+          valueFrom:
+            secretKeyRef:
+              name: rabbitmq-credentials
+              key: pass
+        - name: NOTIFICATION_RABBITMQ_VHOST
+          valueFrom:
+            secretKeyRef:
+              name: rabbitmq-credentials
+              key: vhost
+        # Queue configuration
+        - name: NOTIFICATION_CONSUME_QUEUE
+          valueFrom:
+            configMapKeyRef:
+              name: email-service-config
+              key: consume_queue
+        - name: NOTIFICATION_FAILED_QUEUE
+          valueFrom:
+            configMapKeyRef:
+              name: email-service-config
+              key: failed_queue
+        # SMTP settings
+        - name: NOTIFICATION_SMTP_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: email-service-config
+              key: smtp_host
+        - name: NOTIFICATION_SMTP_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: email-service-config
+              key: smtp_port
+        - name: NOTIFICATION_SMTP_USER
+          valueFrom:
+            secretKeyRef:
+              name: smtp-credentials
+              key: username
+        - name: NOTIFICATION_SMTP_PASS
+          valueFrom:
+            secretKeyRef:
+              name: smtp-credentials
+              key: password
+        - name: NOTIFICATION_SMTP_FROM
+          valueFrom:
+            configMapKeyRef:
+              name: email-service-config
+              key: smtp_from
+        - name: NOTIFICATION_SMTP_USE_TLS
+          value: "false"  # false for Mailhog testing, true for production SMTP
+        # Worker settings
+        - name: NOTIFICATION_PREFETCH_COUNT
+          value: "1"
+        - name: NOTIFICATION_MAX_RETRIES
+          value: "3"
+        - name: NOTIFICATION_VERBOSE
+          value: "true"
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 128Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          capabilities:
+            drop:
+            - ALL
