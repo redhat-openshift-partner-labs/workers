@@ -14,33 +14,18 @@ deploy/
 │   ├── rbac.yaml               # Minimal RBAC
 │   └── kustomization.yaml      # Base kustomization
 ├── overlays/                   # Environment-specific configs
-│   ├── partner-labs/           # Deploy to partner-labs namespace
-│   │   └── kustomization.yaml
-│   ├── opl-email-service/      # Deploy to dedicated namespace
-│   │   ├── kustomization.yaml
-│   │   └── namespace.yaml
-│   └── README.md               # Overlay documentation
-├── kustomization.yaml          # Top-level (defaults to partner-labs)
+│   └── partner-labs/           # Deploy to partner-labs namespace
+│       ├── kustomization.yaml
+│       ├── configmap-patch.yaml
+│       └── deployment-patch.yaml
 └── README.md                   # This file
 ```
 
 ## Quick Start
 
-### Deploy to partner-labs namespace (default)
-
 ```bash
-# Assumes partner-labs namespace already exists
+# Deploy to partner-labs namespace (assumes namespace already exists)
 oc apply -k deploy/overlays/partner-labs
-
-# Or use the default
-oc apply -k deploy/
-```
-
-### Deploy to dedicated opl-email-service namespace
-
-```bash
-# Creates opl-email-service namespace
-oc apply -k deploy/overlays/opl-email-service
 ```
 
 ## Why Kustomize Overlays?
@@ -48,9 +33,8 @@ oc apply -k deploy/overlays/opl-email-service
 The email service needs different configuration depending on which namespace it's deployed to:
 
 1. **Namespace** - Resources must be created in the correct namespace
-2. **SMTP hostname** - For testing with Mailhog, the hostname includes the namespace:
-   - partner-labs: `mailhog-smtp.partner-labs.svc.cluster.local`
-   - opl-email-service: `mailhog-smtp.opl-email-service.svc.cluster.local`
+2. **SMTP hostname** - For testing with Mailhog, the hostname includes the namespace (e.g., `mailhog-smtp.partner-labs.svc.cluster.local`)
+3. **Container image** - Different overlays can use different image repositories/tags
 
 Kustomize overlays solve this by:
 - **Base** contains resources without namespace
@@ -278,6 +262,5 @@ oc set env deployment/opl-email-service -n partner-labs --list
 
 ## See Also
 
-- `overlays/README.md` - Detailed overlay documentation
 - `../DEPLOYMENT.md` - Full deployment guide
 - `../testing/README.md` - Testing infrastructure
