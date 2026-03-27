@@ -1,6 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: email-service-config
-data:
-  smtp_host: "mailhog-smtp.opl-email-service.svc.cluster.local"

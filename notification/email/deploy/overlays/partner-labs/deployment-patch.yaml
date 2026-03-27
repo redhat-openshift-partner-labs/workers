@@ -7,4 +7,4 @@ spec:
     spec:
       containers:
       - name: email-service
-        image: quay.io/dcurran/opl-email-service:latest
+        image: quay.io/dcurran/opl-email-service:0.0.2

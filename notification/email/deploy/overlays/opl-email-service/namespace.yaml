@@ -1,7 +1,0 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: opl-email-service
-  labels:
-    app.kubernetes.io/name: opl-email-service
-    app.kubernetes.io/part-of: openshift-partner-labs

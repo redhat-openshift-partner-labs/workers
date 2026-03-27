@@ -6,9 +6,9 @@ WORKDIR /app
 COPY pyproject.toml .
 RUN pip install --no-cache-dir .
 
-# Copy worker source files
-COPY *.py ./
-COPY templates/ ./templates/
+# Copy worker source files as a notification package
+COPY *.py ./notification/
+COPY templates/ ./notification/templates/
 
 # OpenShift runs with arbitrary UID - ensure files are world-readable
 RUN chmod -R a+rX /app
