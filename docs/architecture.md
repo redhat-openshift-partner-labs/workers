@@ -71,7 +71,7 @@ flowchart TB
 |---|---|---|---|---|
 | **n8n** | Workflow engine | No (self-hosted) | Hub cluster | Receives AppScript POST, validates source, publishes `intake.raw` to RabbitMQ |
 | **worker-etl** | RabbitMQ consumer | Yes (`etl/`) | Hub cluster | Transforms raw Tab 2 JSON into canonical schema |
-| **scribe** | Saga orchestrator | No (separate repo) | Hub cluster | Persists to DB, evaluates policy, orchestrates all sagas. Single writer. |
+| **scribe** | Saga orchestrator | Yes (`scribe/`) | Hub cluster | Persists to DB, evaluates policy, orchestrates all sagas. Single writer. |
 | **messenger** | Slack bot | No (separate repo) | Hub cluster | Posts Slack messages (FYI or interactive), handles `/cluster {id} ready`, publishes dispatch decisions |
 | **worker-provisioning** | RabbitMQ consumer | Yes (`provisioning/`) | Hub cluster | Builds ACM/ArgoCD manifests, opens PR in gitops repo |
 | **provision-watcher** | Standalone CronJob | No (separate) | Hub cluster | Polls for ClusterProvision ready state, publishes `cluster-ready` or `cluster-failed` |
@@ -209,7 +209,7 @@ Every message flows through scribe. Workers publish results back to scribe, whic
 |---|---|---|
 | Queue names | `{domain}.{entity}.{action}` | `lab.day1.insights.disable` |
 | Event types | Same as queue name | `intake.dispatch.notify-fyi` |
-| Schema `$id` | URL-style, versioned | `.../payloads/lab.day1.insights.disable/v1` |
+| Schema `$id` | File-relative path; breaking revisions add a version suffix | `payloads/intake.raw.schema.json`, `payloads/intake.raw.v2.schema.json` |
 | Error codes | `SCREAMING_SNAKE_CASE` | `MISSING_REQUIRED_FIELD` |
 | Source identifiers | Lowercase hyphenated component name | `provision-watcher` |
 | Dead-letter queues | `dlq.{domain}` | `dlq.intake`, `dlq.provision`, `dlq.day1` |
@@ -220,6 +220,5 @@ There is also a `dlq.generic` catch-all for unroutable or malformed messages.
 
 ## Further Reading
 
-- [`queue-schemas-v3.md`](../queue-schemas-v3.md) — Full queue name tables, all payload schemas, complete saga definitions
 - [`docs/schema-evolution.md`](schema-evolution.md) — Versioning policy and breaking change playbook
 - [`schemas/README.md`](../schemas/README.md) — Adding new payload schemas and running contract tests

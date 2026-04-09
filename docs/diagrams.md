@@ -62,7 +62,7 @@ flowchart BT
     SCHEMAS["schemas/\n(JSON Schema — source of truth)"]
 
     CP["commons-python/\n(Pydantic models, RabbitMQ helpers)"]
-    CG["commons-go/\n(planned)"]
+    CG["commons-go/\n(envelope, rabbitmq, health, config)"]
 
     ETL[etl/]
     PROV[provisioning/]
@@ -73,7 +73,7 @@ flowchart BT
     NOTIF[notification/]
 
     CP -->|implements| SCHEMAS
-    CG -.->|will implement| SCHEMAS
+    CG -->|implements| SCHEMAS
 
     ETL --> CP
     PROV --> CP

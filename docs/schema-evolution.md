@@ -43,18 +43,20 @@ Schemas use **semantic versioning** (`major.minor.patch`):
 - **Major bump** — breaking changes (removing/renaming required fields, type changes). Requires the migration playbook below.
 - **Patch bump** — documentation-only changes, description clarifications. No runtime impact.
 
-The `version` field in the **MessageEnvelope** tells consumers which schema version to validate against. Each payload's `$id` also includes the version:
+The `version` field in the **MessageEnvelope** carries the **envelope format version** (currently always `"1.0.0"`). It is not the payload schema version. Payload schema versions are tracked by the **schema filename** — a breaking revision adds a `.v2` suffix to the file, and consumers determine which schema applies from `event_type`.
+
+Each schema's `$id` is a file-relative path matching its location under `schemas/`:
 
 ```
-https://schemas.openshiftpartnerlabs.io/payloads/intake.raw/v1
-https://schemas.openshiftpartnerlabs.io/payloads/intake.raw/v2   ← breaking revision
+payloads/intake.raw.schema.json
+payloads/intake.raw.v2.schema.json   ← breaking revision
 ```
 
 When a breaking change is needed, the new schema file coexists alongside the original:
 
 ```
 schemas/payloads/
-├── intake.raw.schema.json        # v1 (current)
+├── intake.raw.schema.json        # v1 (current, event_type: "intake.raw")
 └── intake.raw.v2.schema.json     # v2 (breaking revision)
 ```
 
