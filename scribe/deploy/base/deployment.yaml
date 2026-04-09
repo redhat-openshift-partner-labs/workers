@@ -1,0 +1,113 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker-scribe
+  namespace: workers
+  labels:
+    app: worker-scribe
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: worker-scribe
+  template:
+    metadata:
+      labels:
+        app: worker-scribe
+    spec:
+      # Pull the image from the internal registry. Override in overlays.
+      containers:
+        - name: scribe
+          image: worker-scribe:latest
+          imagePullPolicy: Always
+
+          env:
+            # ── PostgreSQL ──────────────────────────────────────────────
+            - name: SCRIBE_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: scribe-secrets
+                  key: database-url
+
+            # ── RabbitMQ ────────────────────────────────────────────────
+            - name: SCRIBE_RABBITMQ_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: scribe-secrets
+                  key: rabbitmq-host
+            - name: SCRIBE_RABBITMQ_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: scribe-secrets
+                  key: rabbitmq-port
+            - name: SCRIBE_RABBITMQ_USER
+              valueFrom:
+                secretKeyRef:
+                  name: scribe-secrets
+                  key: rabbitmq-user
+            - name: SCRIBE_RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: scribe-secrets
+                  key: rabbitmq-password
+            - name: SCRIBE_RABBITMQ_VHOST
+              valueFrom:
+                secretKeyRef:
+                  name: scribe-secrets
+                  key: rabbitmq-vhost
+
+            # ── Worker tunables (override per environment) ──────────────
+            - name: SCRIBE_CONSUME_QUEUE
+              value: "intake.normalized"
+            - name: SCRIBE_DLQ_QUEUE
+              value: "dlq.intake"
+            - name: SCRIBE_SOURCE_ID
+              value: "worker-scribe"
+            - name: SCRIBE_HEALTH_PORT
+              value: "8080"
+            - name: SCRIBE_PREFETCH_COUNT
+              value: "1"
+
+          ports:
+            - name: health
+              containerPort: 8080
+              protocol: TCP
+
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: health
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: health
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "128Mi"
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+
+      securityContext:
+        runAsNonRoot: true
+
+      restartPolicy: Always

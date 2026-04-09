@@ -1,0 +1,44 @@
+# ── Stage 1: build ────────────────────────────────────────────────────────────
+# The builder needs access to both the commons-go and scribe modules.
+# Copy the go.work file and both modules so the workspace resolver can
+# satisfy the commons-go import without a network fetch.
+FROM docker.io/library/golang:1.22 AS builder
+
+WORKDIR /workspace
+
+# Copy workspace definition first so module graph is resolved correctly.
+COPY go.work go.work.sum* ./
+
+# Copy module source trees referenced by go.work.
+COPY commons-go/ commons-go/
+COPY scribe/ scribe/
+
+# Download dependencies declared in both modules.
+RUN cd commons-go && go mod download
+RUN cd scribe && go mod download
+
+# Build a static binary — CGO_ENABLED=0 ensures no libc dependency so
+# the binary runs on ubi9/ubi-minimal without additional packages.
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+    go build -trimpath -ldflags="-s -w" \
+    -o /workspace/scribe \
+    ./scribe/cmd/...
+
+# ── Stage 2: runtime ───────────────────────────────────────────────────────────
+# ubi9/ubi-minimal gives us a supported, minimal Red Hat base image with
+# no shell, no package manager, and a much smaller attack surface than
+# the full UBI or golang images.
+FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
+
+# Copy only the compiled binary from the builder stage.
+COPY --from=builder /workspace/scribe /usr/local/bin/scribe
+
+# Health check — mirrors the /readyz probe Kubernetes will use.
+HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
+    CMD ["/usr/local/bin/scribe", "--healthcheck"] 2>/dev/null || \
+    wget -qO- http://localhost:8080/readyz || exit 1
+
+# Run as a non-root user for security hardening.
+USER 1001
+
+ENTRYPOINT ["/usr/local/bin/scribe"]
