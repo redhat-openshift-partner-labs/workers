@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "envelope.schema.json",
+  "title": "MessageEnvelope",
+  "description": "Standard wrapper for all messages on the broker. Every worker publishes and consumes this shape.",
+  "type": "object",
+  "required": [
+    "event_type",
+    "event_id",
+    "timestamp",
+    "source",
+    "correlation_id",
+    "causation_id",
+    "version",
+    "retry_count",
+    "payload"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "event_type": {
+      "type": "string",
+      "description": "Identifies the event and selects the payload schema.",
+      "enum": [
+        "intake.raw",
+        "intake.normalized"
+      ]
+    },
+    "event_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique ID for this message instance."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 UTC timestamp of when the message was produced."
+    },
+    "source": {
+      "type": "string",
+      "description": "Identifier of the worker or system that produced this message.",
+      "examples": ["appscript-intake", "worker-etl"]
+    },
+    "correlation_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Traces a chain of related messages across workers."
+    },
+    "causation_id": {
+      "type": ["string", "null"],
+      "format": "uuid",
+      "description": "event_id of the message that directly caused this one. Null for originating events."
+    },
+    "version": {
+      "type": "string",
+      "description": "Envelope schema version.",
+      "default": "1.0.0",
+      "examples": ["1.0.0"]
+    },
+    "retry_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of times this message has been retried. 0 on first delivery.",
+      "default": 0
+    },
+    "payload_type": {
+      "type": "string",
+      "description": "Optional hint for payload schema routing within a worker (e.g. 'google-sheets-v1').",
+      "examples": ["google-sheets-v1"]
+    },
+    "payload": {
+      "type": "object",
+      "description": "Event-specific data. Schema is determined by event_type."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "event_type": { "const": "intake.raw" } },
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {
+          "payload": { "$ref": "payloads/intake.raw.schema.json" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "event_type": { "const": "intake.normalized" } },
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {
+          "payload": { "$ref": "payloads/intake.normalized.schema.json" }
+        }
+      }
+    }
+  ]
+}
