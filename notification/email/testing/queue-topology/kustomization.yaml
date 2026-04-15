@@ -1,0 +1,22 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Notification worker queue topology (subset of full OPL topology)
+#
+# This is a minimal subset extracted from the queue repo for testing.
+# For production, deploy the full topology from the queue repo instead.
+#
+# What's included:
+# - vhost: opl
+# - exchanges: opl.notify, opl.handoff, opl.provision, opl.dlx
+# - queues: All notification-related queues (7 consumed + 4 produced)
+# - bindings: Route messages from exchanges to queues
+# - user: user-worker-notification with least-privilege permissions
+
+namespace: partnerlabs
+
+resources:
+  - rabbitmq-vhost.yaml
+  - notification-exchanges.yaml
+  - notification-queues.yaml
+  - notification-user-permission.yaml

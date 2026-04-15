@@ -21,7 +21,7 @@ The OPL Email Service consumes JSON messages from RabbitMQ and sends emails to p
 {
   "to": ["partner@example.com"],
   "subject": "OpenShift Partner Labs - cluster-abc-123",
-  "template": "cluster-provisioned",
+  "template": "lab_ready",
   "data": {
     "cluster_id": "cluster-abc-123",
     "console_url": "https://console-openshift-console.apps.cluster-abc-123.example.com",
@@ -56,10 +56,10 @@ The OPL Email Service consumes JSON messages from RabbitMQ and sends emails to p
 | `cc` | array of strings | No | CC recipient email addresses |
 | `bcc` | array of strings | No | BCC recipient email addresses |
 | `subject` | string | Yes | Email subject line |
-| `template` | string | Yes | Template name (`cluster-provisioned` or `cluster-expiring`) |
+| `template` | string | Yes | Template name (`lab_ready`, `lab_expiring`, or `lab_deprovisioned`) |
 | `data` | object | Yes | Template-specific data (see below) |
 
-### Data Fields (for `cluster-provisioned` template)
+### Data Fields (for `lab_ready` template)
 
 | Field | Type | Required | Description | Example |
 |-------|------|----------|-------------|---------|
@@ -70,7 +70,7 @@ The OPL Email Service consumes JSON messages from RabbitMQ and sends emails to p
 | `timezone` | string | Yes | Partner's timezone | `"America/New_York"`, `"Europe/London"`, `"Asia/Tokyo"` |
 | `expiration_date` | string | Yes | Cluster expiration date (YYYY-MM-DD) | `"2026-04-15"` |
 
-### Data Fields (for `cluster-expiring` template)
+### Data Fields (for `lab_expiring` template)
 
 | Field | Type | Required | Description | Example |
 |-------|------|----------|-------------|---------|
@@ -78,6 +78,14 @@ The OPL Email Service consumes JSON messages from RabbitMQ and sends emails to p
 | `expiration_date` | string | Yes | When cluster will expire | `"2026-04-15"` |
 | `days_remaining` | number | Yes | Days until expiration | `7` |
 | `console_url` | string | No | OpenShift console URL | `"https://console..."` |
+
+### Data Fields (for `lab_deprovisioned` template)
+
+| Field | Type | Required | Description | Example |
+|-------|------|----------|-------------|---------|
+| `cluster_id` | string | Yes | Unique cluster identifier | `"partner-cluster-123"` |
+| `deprovision_date` | string | Yes | Date cluster was deprovisioned | `"2026-04-15"` |
+| `deprovision_reason` | string | Yes | Reason for deprovisioning | `"Lab access expired"` |
 
 ## Complete Examples
 
@@ -87,7 +95,7 @@ The OPL Email Service consumes JSON messages from RabbitMQ and sends emails to p
 {
   "to": ["john.doe@acmecorp.com"],
   "subject": "OpenShift Partner Labs - acme-test-cluster",
-  "template": "cluster-provisioned",
+  "template": "lab_ready",
   "data": {
     "cluster_id": "acme-test-cluster",
     "console_url": "https://console-openshift-console.apps.acme-test-cluster.openshiftpartnerlabs.com",
@@ -106,7 +114,7 @@ The OPL Email Service consumes JSON messages from RabbitMQ and sends emails to p
   "to": ["jane.smith@partnercorp.com", "bob.jones@partnercorp.com"],
   "cc": ["sponsor@redhat.com"],
   "subject": "OpenShift Partner Labs - partnercorp-dev-01",
-  "template": "cluster-provisioned",
+  "template": "lab_ready",
   "data": {
     "cluster_id": "partnercorp-dev-01",
     "console_url": "https://console-openshift-console.apps.partnercorp-dev-01.openshiftpartnerlabs.com",
@@ -124,7 +132,7 @@ The OPL Email Service consumes JSON messages from RabbitMQ and sends emails to p
 {
   "to": ["partner@example.com"],
   "subject": "OpenShift Partner Labs - Cluster Expiring Soon",
-  "template": "cluster-expiring",
+  "template": "lab_expiring",
   "data": {
     "cluster_id": "test-cluster-123",
     "expiration_date": "2026-03-25",
@@ -271,7 +279,7 @@ python scripts/publish-email-message.py \
 **Common Issues**:
 - Missing required fields: Check field names match exactly
 - Invalid email address: Use proper format (`user@domain.com`)
-- Template not found: Use `cluster-provisioned` or `cluster-expiring`
+- Template not found: Use `lab_ready` or `lab_expiring`
 - Invalid JSON: Use JSON validator (e.g., `jq`)
 
 **Example JSON Validation**:

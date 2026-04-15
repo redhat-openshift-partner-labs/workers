@@ -49,27 +49,30 @@ class NotificationWorker:
         signal.signal(signal.SIGINT, self._handle_shutdown)
 
         logger.info("Starting notification worker")
-        logger.info(f"Consuming from queue: {self.settings.consume_queue}")
+        logger.info(f"Consuming from queues: {', '.join(self.settings.queue_list)}")
+        logger.info(f"Publishing to exchange: {self.settings.publish_exchange}")
         logger.info(f"SMTP: {self.settings.smtp_host}:{self.settings.smtp_port}")
 
         # Connect to RabbitMQ
+        logger.info(f"RabbitMQ URL: {self.settings.rabbitmq_url}")
         params = pika.URLParameters(self.settings.rabbitmq_url)
         self.connection = pika.BlockingConnection(params)
         self.channel = self.connection.channel()
 
-        # Declare queues
-        self.channel.queue_declare(queue=self.settings.consume_queue, durable=True)
-        self.channel.queue_declare(queue=self.settings.failed_queue, durable=True)
+        # Exchange already declared by queue topology operator - no need to declare
+        # Worker only has read/write permissions, not configure
 
         # Set QoS
         self.channel.basic_qos(prefetch_count=self.settings.prefetch_count)
 
-        # Start consuming
-        self.channel.basic_consume(
-            queue=self.settings.consume_queue,
-            on_message_callback=self._on_message,
-            auto_ack=False,
-        )
+        # Start consuming from all queues
+        for queue in self.settings.queue_list:
+            logger.info(f"Subscribing to queue: {queue}")
+            self.channel.basic_consume(
+                queue=queue,
+                on_message_callback=self._on_message,
+                auto_ack=False,
+            )
 
         logger.info("Worker started. Waiting for messages...")
 
@@ -102,6 +105,22 @@ class NotificationWorker:
             # Process message
             self._process_message(body)
 
+            # Publish success to exchange
+            try:
+                channel.basic_publish(
+                    exchange=self.settings.publish_exchange,
+                    routing_key=self.settings.success_routing_key,
+                    body=body,
+                    properties=pika.BasicProperties(delivery_mode=2),
+                )
+                if self.settings.verbose:
+                    logger.info(
+                        f"Published success to {self.settings.publish_exchange} "
+                        f"with routing key {self.settings.success_routing_key}"
+                    )
+            except Exception as publish_error:
+                logger.error(f"Failed to publish success: {publish_error}")
+
             # Acknowledge success
             channel.basic_ack(delivery_tag=method.delivery_tag)
 
@@ -111,17 +130,29 @@ class NotificationWorker:
         except Exception as e:
             logger.error(f"Error processing message: {e}")
 
-            # Route to failed queue
+            # Publish failure to exchange
             try:
+                # Add error information to the message
+                failure_body = body
+                try:
+                    data = json.loads(body)
+                    data["error"] = str(e)
+                    failure_body = json.dumps(data).encode()
+                except Exception:
+                    pass  # Keep original body if we can't parse/modify it
+
                 channel.basic_publish(
-                    exchange="",
-                    routing_key=self.settings.failed_queue,
-                    body=body,
+                    exchange=self.settings.publish_exchange,
+                    routing_key=self.settings.failure_routing_key,
+                    body=failure_body,
                     properties=pika.BasicProperties(delivery_mode=2),
                 )
-                logger.info(f"Message routed to {self.settings.failed_queue}")
+                logger.info(
+                    f"Published failure to {self.settings.publish_exchange} "
+                    f"with routing key {self.settings.failure_routing_key}"
+                )
             except Exception as publish_error:
-                logger.error(f"Failed to route to DLQ: {publish_error}")
+                logger.error(f"Failed to publish failure: {publish_error}")
 
             # Acknowledge (don't requeue)
             channel.basic_ack(delivery_tag=method.delivery_tag)

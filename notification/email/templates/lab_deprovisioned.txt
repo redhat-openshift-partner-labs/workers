@@ -1,0 +1,26 @@
+Your OpenShift Lab Has Been Deprovisioned
+================================================================================
+
+This is to confirm that your OpenShift Partner Lab cluster has been removed.
+
+Cluster Information
+================================================================================
+Cluster ID: $cluster_id
+Deprovisioned: $deprovision_date
+Reason: $deprovision_reason
+
+What This Means
+================================================================================
+* All cluster resources have been permanently deleted
+* Access credentials are no longer valid
+* All data stored on the cluster has been removed
+
+Need Another Lab?
+================================================================================
+If you require additional lab access, please contact your Red Hat sponsor to
+submit a new request.
+
+Thank you for using OpenShift Partner Labs.
+
+================================================================================
+This is an automated message from OpenShift Partner Labs.

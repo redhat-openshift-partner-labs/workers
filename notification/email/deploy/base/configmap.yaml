@@ -6,14 +6,19 @@ metadata:
     app: opl-email-service
 data:
   # RabbitMQ queue configuration
-  consume_queue: "lab.notify.email"
-  failed_queue: "lab.notify.email.failed"
+  # Worker consumes from multiple queues (comma-separated)
+  consume_queues: "notify.user.lab-ready,notify.user.lab-deprovisioned,notify.user.lab-expiring,notify.admin.failure,notify.admin.timeout,lab.provision.pr.approval-required,handoff.welcome-email.send"
+
+  # Exchange for publishing results
+  publish_exchange: "opl.notify"
+  # Routing keys for success/failure
+  success_routing_key: "notification.sent"
+  failure_routing_key: "notification.failed"
 
   # SMTP configuration (non-sensitive)
-  # This value is patched by overlays to match the target namespace
-  # For Mailhog testing: mailhog-smtp.<namespace>.svc.cluster.local
-  # For production SMTP, update in overlay to use external service
-  smtp_host: "mailhog-smtp.NAMESPACE.svc.cluster.local"
+  # For Mailhog testing: use short name (same namespace as worker)
+  # For production SMTP, update in overlay to use external FQDN/IP
+  smtp_host: "mailhog-smtp"
   smtp_port: "1025"
 
   smtp_from: "OpenShift Partner Labs <noreply@openshiftpartnerlabs.com>"

@@ -58,7 +58,7 @@ except ImportError:
     sys.exit(1)
 
 
-def publish_cluster_provisioned_email(
+def publish_lab_ready_email(
     rabbitmq_url: str,
     to: List[str],
     cluster_id: str,
@@ -74,7 +74,7 @@ def publish_cluster_provisioned_email(
     verbose: bool = False,
 ) -> bool:
     """
-    Publish a cluster-provisioned email message to RabbitMQ.
+    Publish a lab_ready email message to RabbitMQ.
 
     Args:
         rabbitmq_url: RabbitMQ connection URL (e.g., amqp://user:pass@host:5672/)
@@ -97,8 +97,8 @@ def publish_cluster_provisioned_email(
     # Build message
     message = {
         "to": to,
-        "subject": custom_subject or f"OpenShift Partner Labs - {cluster_id}",
-        "template": "cluster-provisioned",
+        "subject": custom_subject or f"Your OpenShift Lab is Ready - {cluster_id}",
+        "template": "lab_ready",
         "data": {
             "cluster_id": cluster_id,
             "console_url": console_url,
@@ -176,7 +176,7 @@ def publish_cluster_provisioned_email(
         return False
 
 
-def publish_cluster_expiring_email(
+def publish_lab_expiring_email(
     rabbitmq_url: str,
     to: List[str],
     cluster_id: str,
@@ -189,7 +189,7 @@ def publish_cluster_expiring_email(
     verbose: bool = False,
 ) -> bool:
     """
-    Publish a cluster-expiring email message to RabbitMQ.
+    Publish a lab_expiring email message to RabbitMQ.
 
     Args:
         rabbitmq_url: RabbitMQ connection URL
@@ -208,8 +208,8 @@ def publish_cluster_expiring_email(
     """
     message = {
         "to": to,
-        "subject": "OpenShift Partner Labs - Cluster Expiring Soon",
-        "template": "cluster-expiring",
+        "subject": "Your OpenShift Lab is Expiring Soon",
+        "template": "lab_expiring",
         "data": {
             "cluster_id": cluster_id,
             "expiration_date": expiration_date,
@@ -255,13 +255,88 @@ def publish_cluster_expiring_email(
         return False
 
 
+def publish_lab_deprovisioned_email(
+    rabbitmq_url: str,
+    to: List[str],
+    cluster_id: str,
+    deprovision_date: str,
+    deprovision_reason: str,
+    cc: Optional[List[str]] = None,
+    bcc: Optional[List[str]] = None,
+    queue_name: str = "opl-emails",
+    verbose: bool = False,
+) -> bool:
+    """
+    Publish a lab_deprovisioned email message to RabbitMQ.
+
+    Args:
+        rabbitmq_url: RabbitMQ connection URL
+        to: List of recipient email addresses
+        cluster_id: Unique cluster identifier
+        deprovision_date: Date the cluster was deprovisioned
+        deprovision_reason: Reason for deprovisioning
+        cc: Optional CC recipients
+        bcc: Optional BCC recipients
+        queue_name: RabbitMQ queue name
+        verbose: Enable verbose output
+
+    Returns:
+        True if message published successfully, False otherwise
+    """
+    message = {
+        "to": to,
+        "subject": f"Your OpenShift Lab Has Been Deprovisioned - {cluster_id}",
+        "template": "lab_deprovisioned",
+        "data": {
+            "cluster_id": cluster_id,
+            "deprovision_date": deprovision_date,
+            "deprovision_reason": deprovision_reason,
+        },
+    }
+
+    if cc:
+        message["cc"] = cc
+    if bcc:
+        message["bcc"] = bcc
+
+    if verbose:
+        print("Message to publish:")
+        print(json.dumps(message, indent=2))
+        print()
+
+    try:
+        connection = pika.BlockingConnection(pika.URLParameters(rabbitmq_url))
+        channel = connection.channel()
+        channel.queue_declare(queue=queue_name, durable=True)
+
+        channel.basic_publish(
+            exchange="",
+            routing_key=queue_name,
+            body=json.dumps(message),
+            properties=pika.BasicProperties(
+                delivery_mode=2,
+                content_type="application/json",
+            ),
+        )
+
+        if verbose:
+            print(f"Message published to queue '{queue_name}'")
+
+        connection.close()
+        return True
+
+    except Exception as e:
+        print(f"Error: Failed to publish message: {e}", file=sys.stderr)
+        return False
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Publish email messages to RabbitMQ for OPL Email Service",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Basic cluster-provisioned email
+  # Basic lab_ready email
   %(prog)s \\
     --rabbitmq-url "amqp://localhost:5672/" \\
     --to "partner@example.com" \\
@@ -288,7 +363,7 @@ Examples:
   %(prog)s \\
     --rabbitmq-url "amqp://localhost:5672/" \\
     --to "partner@example.com" \\
-    --template cluster-expiring \\
+    --template lab_expiring \\
     --cluster-id "test-123" \\
     --expiration-date "2026-03-31" \\
     --days-remaining 7
@@ -331,9 +406,9 @@ Environment Variables:
     # Template selection
     parser.add_argument(
         "--template",
-        choices=["cluster-provisioned", "cluster-expiring"],
-        default="cluster-provisioned",
-        help="Email template to use (default: cluster-provisioned)",
+        choices=["lab_ready", "lab_expiring", "lab_deprovisioned"],
+        default="lab_ready",
+        help="Email template to use (default: lab_ready)",
     )
 
     # Common fields
@@ -348,33 +423,43 @@ Environment Variables:
         help="Cluster expiration date (YYYY-MM-DD)",
     )
 
-    # cluster-provisioned specific
+    # lab_ready specific
     parser.add_argument(
         "--console-url",
-        help="OpenShift console URL (required for cluster-provisioned)",
+        help="OpenShift console URL (required for lab_ready)",
     )
     parser.add_argument(
         "--credentials-url",
-        help="Password-protected credentials URL (required for cluster-provisioned)",
+        help="Password-protected credentials URL (required for lab_ready)",
     )
     parser.add_argument(
         "--credentials-password",
-        help="Password for credentials URL (required for cluster-provisioned)",
+        help="Password for credentials URL (required for lab_ready)",
     )
     parser.add_argument(
         "--timezone",
-        help="Partner timezone (required for cluster-provisioned)",
+        help="Partner timezone (required for lab_ready)",
     )
     parser.add_argument(
         "--subject",
         help="Custom email subject (optional, defaults to 'OpenShift Partner Labs - <cluster-id>')",
     )
 
-    # cluster-expiring specific
+    # lab_expiring specific
     parser.add_argument(
         "--days-remaining",
         type=int,
-        help="Days until expiration (required for cluster-expiring)",
+        help="Days until expiration (required for lab_expiring)",
+    )
+
+    # lab_deprovisioned specific
+    parser.add_argument(
+        "--deprovision-date",
+        help="Date cluster was deprovisioned (required for lab_deprovisioned)",
+    )
+    parser.add_argument(
+        "--deprovision-reason",
+        help="Reason for deprovisioning (required for lab_deprovisioned)",
     )
 
     # Other options
@@ -393,7 +478,7 @@ Environment Variables:
         sys.exit(1)
 
     # Route to appropriate function based on template
-    if args.template == "cluster-provisioned":
+    if args.template == "lab_ready":
         # Validate required fields
         required = {
             "console-url": args.console_url,
@@ -403,11 +488,11 @@ Environment Variables:
         }
         missing = [k for k, v in required.items() if not v]
         if missing:
-            print(f"Error: Missing required fields for cluster-provisioned: {', '.join(missing)}", file=sys.stderr)
+            print(f"Error: Missing required fields for lab_ready: {', '.join(missing)}", file=sys.stderr)
             print("Run with --help for usage examples", file=sys.stderr)
             sys.exit(1)
 
-        success = publish_cluster_provisioned_email(
+        success = publish_lab_ready_email(
             rabbitmq_url=args.rabbitmq_url,
             to=args.to,
             cluster_id=args.cluster_id,
@@ -423,18 +508,42 @@ Environment Variables:
             verbose=args.verbose,
         )
 
-    elif args.template == "cluster-expiring":
+    elif args.template == "lab_expiring":
         if not args.days_remaining:
-            print("Error: --days-remaining required for cluster-expiring template", file=sys.stderr)
+            print("Error: --days-remaining required for lab_expiring template", file=sys.stderr)
             sys.exit(1)
 
-        success = publish_cluster_expiring_email(
+        success = publish_lab_expiring_email(
             rabbitmq_url=args.rabbitmq_url,
             to=args.to,
             cluster_id=args.cluster_id,
             expiration_date=args.expiration_date,
             days_remaining=args.days_remaining,
             console_url=args.console_url,
+            cc=args.cc,
+            bcc=args.bcc,
+            queue_name=args.queue_name,
+            verbose=args.verbose,
+        )
+
+    elif args.template == "lab_deprovisioned":
+        # Validate required fields
+        required = {
+            "deprovision-date": args.deprovision_date,
+            "deprovision-reason": args.deprovision_reason,
+        }
+        missing = [k for k, v in required.items() if not v]
+        if missing:
+            print(f"Error: Missing required fields for lab_deprovisioned: {', '.join(missing)}", file=sys.stderr)
+            print("Run with --help for usage examples", file=sys.stderr)
+            sys.exit(1)
+
+        success = publish_lab_deprovisioned_email(
+            rabbitmq_url=args.rabbitmq_url,
+            to=args.to,
+            cluster_id=args.cluster_id,
+            deprovision_date=args.deprovision_date,
+            deprovision_reason=args.deprovision_reason,
             cc=args.cc,
             bcc=args.bcc,
             queue_name=args.queue_name,
