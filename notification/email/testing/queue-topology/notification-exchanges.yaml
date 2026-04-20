@@ -1,0 +1,70 @@
+# Extracted from queue/rabbitmq-topology-manifests.yaml
+# Only includes exchanges needed by notification worker
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: Exchange
+metadata:
+  name: ex-notify
+  labels:
+    app.kubernetes.io/part-of: opl
+    opl.io/domain: notification
+spec:
+  name: opl.notify
+  vhost: opl
+  type: topic
+  durable: true
+  autoDelete: false
+  rabbitmqClusterReference:
+    name: queue
+
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: Exchange
+metadata:
+  name: ex-handoff
+  labels:
+    app.kubernetes.io/part-of: opl
+    opl.io/domain: handoff
+spec:
+  name: opl.handoff
+  vhost: opl
+  type: topic
+  durable: true
+  autoDelete: false
+  rabbitmqClusterReference:
+    name: queue
+
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: Exchange
+metadata:
+  name: ex-provision
+  labels:
+    app.kubernetes.io/part-of: opl
+    opl.io/domain: provision
+spec:
+  name: opl.provision
+  vhost: opl
+  type: topic
+  durable: true
+  autoDelete: false
+  rabbitmqClusterReference:
+    name: queue
+
+---
+# Dead-letter exchange
+apiVersion: rabbitmq.com/v1beta1
+kind: Exchange
+metadata:
+  name: ex-dlx
+  labels:
+    app.kubernetes.io/part-of: opl
+    opl.io/domain: dlq
+spec:
+  name: opl.dlx
+  vhost: opl
+  type: topic
+  durable: true
+  autoDelete: false
+  rabbitmqClusterReference:
+    name: queue

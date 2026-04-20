@@ -1,0 +1,14 @@
+# Copied from queue/rabbitmq-vhost.yaml
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: Vhost
+metadata:
+  name: vhost-opl
+  labels:
+    app.kubernetes.io/part-of: opl
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  name: opl
+  rabbitmqClusterReference:
+    name: queue
