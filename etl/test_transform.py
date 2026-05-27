@@ -97,8 +97,18 @@ class TestTransformHappyPath:
 
         assert db["cluster_id"]  # UUID, non-empty
         assert db["generated_name"].startswith("opl-")
-        assert db["cluster_name"]  # derived from company + project
-        assert "acme" in db["cluster_name"]
+        # cluster_name format: xxxxxxxxxxx-yyyyyyyy (prefix-uuid8)
+        assert db["cluster_name"]
+        prefix, suffix = db["cluster_name"].rsplit("-", 1)
+        assert len(suffix) == 8
+        assert len(prefix) <= 11
+
+    def test_created_at_and_updated_at_not_null(self):
+        result = transform(SCHEMA, SAMPLE_PAYLOAD)
+        db = result["db_columns"]
+
+        assert db["created_at"]
+        assert db["updated_at"]
 
     def test_splits_names_correctly(self):
         result = transform(SCHEMA, SAMPLE_PAYLOAD)

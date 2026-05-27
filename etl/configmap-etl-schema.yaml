@@ -33,6 +33,8 @@ data:
     generated_fields:
       - db_column: cluster_id
         generator: uuid4
+      - db_column: created_at
+        generator: datetime_now
       - db_column: generated_name
         generator: short_id    # e.g., "opl-a7f3b2"
       - db_column: cluster_name
@@ -43,6 +45,8 @@ data:
       - db_column: state
         generator: static
         value: "Pending"
+      - db_column: updated_at
+        generator: datetime_now
 
     # Mapping from Sheet payload keys to DB columns
     fields:

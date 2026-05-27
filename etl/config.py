@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     publish_queue: str = "intake.normalized"
     failed_queue: str = "intake.raw.failed"
 
+    # Exchanges
+    publish_exchange: str = ""
+
     # Schema configuration
     # Multi-schema: directory containing *.yaml schema files (preferred)
     schema_dir: str = "/etc/etl-schemas"

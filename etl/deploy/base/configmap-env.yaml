@@ -18,3 +18,4 @@ data:
   ETL_DEFAULT_PAYLOAD_TYPE: "google-sheets-v1"
   ETL_SOURCE_ID: "worker-etl"
   ETL_PREFETCH_COUNT: "1"
+  ETL_PUBLISH_EXCHANGE: "opl.intake"

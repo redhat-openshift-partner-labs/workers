@@ -169,7 +169,7 @@ class ETLWorker:
                 causation_id=causation_id,
             )
             channel.basic_publish(
-                exchange="",
+                exchange=self.settings.publish_exchange,
                 routing_key=self.settings.publish_queue,
                 body=msg,
                 properties=pika.BasicProperties(delivery_mode=2),  # persistent
@@ -265,7 +265,7 @@ class ETLWorker:
             causation_id=causation_id,
         )
         channel.basic_publish(
-            exchange="",
+            exchange=self.settings.publish_exchange,
             routing_key=self.settings.failed_queue,
             body=msg,
             properties=pika.BasicProperties(delivery_mode=2),

@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import re
 import uuid
-import hashlib
 from datetime import datetime, timezone
 from typing import Any
 
@@ -123,34 +122,36 @@ def _generate_short_id() -> str:
     return f"opl-{uuid.uuid4().hex[:6]}"
 
 
+def _generate_datetime_now() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
 def _derive_cluster_name(db_row: dict) -> str:
     """
-    Derive a DNS-safe cluster name from company + project.
-    e.g., "Acme Corp" + "fsi-demo" → "acme-fsi-demo"
-    Falls back to a hash if the result would be too long.
+    Derive a DNS-safe cluster name: xxxxxxxxxxx-yyyyyyyy
+    11-char prefix (project, padded with company) + hyphen + 8-char uuid.
     """
     company = db_row.get("company_name", "unknown")
-    project = db_row.get("project_name", "lab")
+    project = db_row.get("project_name", "labs")
 
-    # Take first word of company, lowercase, alphanumeric only
-    company_slug = re.sub(r"[^a-z0-9]", "", company.lower().split()[0]) if company else "lab"
+    company_slug = re.sub(r"[^a-z0-9]", "", company.lower().split()[0]) if company else "labs"
     project_slug = re.sub(r"[^a-z0-9-]", "", project.lower().replace(" ", "-"))
 
-    name = f"{company_slug}-{project_slug}"
+    prefix = project_slug[:11]
+    if len(prefix) < 11:
+        prefix += company_slug[:11 - len(prefix)]
+    prefix = prefix.ljust(11, "0")
 
-    # DNS label max is 63 chars; keep it shorter for readability
-    if len(name) > 40:
-        suffix = hashlib.sha256(name.encode()).hexdigest()[:6]
-        name = f"{name[:33]}-{suffix}"
+    # Trim trailing hyphens to stay DNS-safe
+    prefix = prefix.rstrip("-") or "unknownlabs"
 
-    # Ensure it starts/ends with alphanumeric
-    name = re.sub(r"^[^a-z0-9]+|[^a-z0-9]+$", "", name)
-    return name or "opl-lab"
+    return f"{prefix}-{uuid.uuid4().hex[:8]}"
 
 
 GENERATORS = {
     "uuid4": lambda _row: _generate_uuid4(),
     "short_id": lambda _row: _generate_short_id(),
+    "datetime_now": lambda _row: _generate_datetime_now(),
     "derive_cluster_name": _derive_cluster_name,
     "static": None,  # handled separately (uses field.value)
 }
