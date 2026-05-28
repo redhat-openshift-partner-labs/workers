@@ -132,11 +132,10 @@ class ETLWorker:
 
             # ── Build normalized payload ──────────────────────────────
             normalized_payload = {
+                "request_id": form_response_id,
                 "form_response_id": form_response_id,
                 "sheet_row_number": sheet_row_number,
                 "cluster_name": result["db_columns"].get("cluster_name", ""),
-                "cluster_id": result["db_columns"].get("cluster_id", ""),
-                "generated_name": result["db_columns"].get("generated_name", ""),
                 "base_domain": "",  # Not in Sheet — set downstream or via config
                 "hub_cluster_name": "",  # Set downstream or via config
                 "hub_base_domain": "",  # Set downstream or via config

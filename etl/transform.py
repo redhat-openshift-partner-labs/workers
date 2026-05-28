@@ -263,10 +263,10 @@ def transform(schema: ETLSchema, raw: dict) -> dict:
                 db_columns[gen_field.db_column] = gen_fn(db_columns)
 
     # ── Step 5: Compute end_date from start_date + lease ──────────────
-    db_columns["end_date"] = _compute_end_date(
-        db_columns.get("start_date", ""),
-        db_columns.get("lease_time", ""),
-    )
+    start_date = db_columns.get("start_date", "")
+    lease_time = db_columns.get("lease_time", "")
+    if start_date and lease_time:
+        db_columns["end_date"] = _compute_end_date(start_date, lease_time)
 
     # ── Step 6: Evaluate auto-provision policy ────────────────────────
     is_standard = _evaluate_standard_config(schema, raw, db_columns)
@@ -293,7 +293,10 @@ def _compute_end_date(start_date_iso: str, lease: str) -> str:
     try:
         start = datetime.fromisoformat(start_date_iso.replace("Z", "+00:00"))
     except (ValueError, TypeError):
-        return ""
+        raise TransformError(
+            "INVALID_START_DATE",
+            f"Cannot compute end_date: invalid start_date '{start_date_iso}'",
+        )
 
     lease_lower = lease.lower()
 
