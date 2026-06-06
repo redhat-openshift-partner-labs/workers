@@ -1,0 +1,15 @@
+.serena/
+.venv/
+deploy/
+docs/
+schemas/
+tmp/
+.coverage
+.mcp.json
+CLAUDE.md
+README.md
+
+.guardrails
+mise.toml
+.pytest_cache/
+__pycache__/
