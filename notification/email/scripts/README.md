@@ -10,7 +10,7 @@ pip install pika
 
 ## Usage
 
-### Basic cluster-provisioned email
+### Basic lab_ready email
 
 ```bash
 ./publish-email-message.py \
@@ -59,7 +59,7 @@ export RABBITMQ_URL="amqp://user:pass@localhost:5672/"
 ./publish-email-message.py \
   --rabbitmq-url "amqp://localhost:5672/" \
   --to "partner@example.com" \
-  --template cluster-expiring \
+  --template lab_expiring \
   --cluster-id "test-123" \
   --expiration-date "2026-03-31" \
   --days-remaining 7
@@ -111,15 +111,15 @@ oc port-forward -n rabbitmq-namespace svc/rabbitmq 5672:5672
 
 The `examples/` directory contains sample JSON messages:
 
-- `cluster-provisioned-example.json` - Basic provisioned cluster email
-- `cluster-provisioned-with-cc.json` - With CC and multiple recipients
-- `cluster-expiring-example.json` - Expiration warning email
+- `lab_ready-example.json` - Basic provisioned cluster email
+- `lab_ready-with-cc.json` - With CC and multiple recipients
+- `lab_expiring-example.json` - Expiration warning email
 
 ### Using Example Files
 
 ```bash
 # Publish using amqp-publish directly
-cat examples/cluster-provisioned-example.json | \
+cat examples/lab_ready-example.json | \
   amqp-publish -u "amqp://localhost:5672/" -r "opl-emails" -p
 
 # Or via RabbitMQ Management UI
@@ -152,7 +152,7 @@ def send_cluster_provisioned_email(
     message = {
         "to": [partner_email],
         "subject": f"OpenShift Partner Labs - {cluster_id}",
-        "template": "cluster-provisioned",
+        "template": "lab_ready",
         "data": {
             "cluster_id": cluster_id,
             "console_url": console_url,

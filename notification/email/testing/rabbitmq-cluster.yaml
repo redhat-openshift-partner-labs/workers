@@ -1,0 +1,89 @@
+---
+# RabbitMQ Cluster using RabbitMQ Cluster Operator
+# For testing the notification worker with proper queue topology
+#
+# Prerequisites:
+# - RabbitMQ Cluster Operator installed in cluster
+# - Install via OperatorHub or: kubectl apply -f "https://github.com/rabbitmq/cluster-operator/releases/latest/download/cluster-operator.yml"
+#
+# This creates:
+# - RabbitMQ cluster with management UI
+# - Service endpoints for AMQP and management
+# - TLS disabled for testing (enable for production)
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: RabbitmqCluster
+metadata:
+  name: queue
+  labels:
+    app: rabbitmq
+    component: queue
+spec:
+  # Single replica for testing (use 3+ for production)
+  replicas: 1
+
+  # Resource limits
+  # IMPORTANT: Memory request and limit MUST be equal (RabbitMQ Operator requirement)
+  resources:
+    requests:
+      cpu: 200m
+      memory: 1Gi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+  # Persistent storage (use PVC for production)
+  persistence:
+    storageClassName: gp3-csi  # Adjust for your cluster
+    storage: 5Gi
+
+  # RabbitMQ configuration
+  rabbitmq:
+    # Additional RabbitMQ config
+    additionalConfig: |
+      # Increase default message TTL
+      consumer_timeout = 3600000
+      # Cluster formation
+      cluster_formation.peer_discovery_backend = rabbit_peer_discovery_k8s
+      cluster_formation.k8s.host = kubernetes.default.svc.cluster.local
+      cluster_formation.k8s.address_type = hostname
+      # Memory limits
+      vm_memory_high_watermark.relative = 0.8
+      # Disk space limits
+      disk_free_limit.absolute = 2GB
+
+    # Enable plugins
+    additionalPlugins:
+      - rabbitmq_management
+      - rabbitmq_peer_discovery_k8s
+      - rabbitmq_prometheus
+
+  # Service configuration
+  service:
+    type: ClusterIP
+
+  # TLS disabled for testing
+  tls:
+    disableNonTLSListeners: false
+
+  # Override default image (optional)
+  # image: rabbitmq:3.13-management
+
+---
+# Route to RabbitMQ Management UI (OpenShift only)
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: rabbitmq-management
+  labels:
+    app: rabbitmq
+    component: queue
+spec:
+  port:
+    targetPort: management
+  to:
+    kind: Service
+    name: queue
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect

@@ -1,0 +1,36 @@
+Your OpenShift Lab is Ready!
+================================================================================
+
+Hello $partner_name,
+
+Your OpenShift cluster is now ready for use!
+
+Cluster Access
+================================================================================
+Console URL: $console_url
+API URL: $api_url
+
+Credentials (24-hour expiration)
+================================================================================
+URL: $credentials_url
+PASSWORD: $credentials_password
+
+IMPORTANT INFORMATION
+================================================================================
+* Cluster ID: $cluster_id
+
+* Availability: Your cluster is available $business_hours ($timezone).
+  Outside these hours, the cluster will be automatically hibernated.
+
+* Expiration: This lab access expires on $expiration_date ($expiration_days days).
+  After expiration, the cluster will be hibernated for 48 hours and then
+  permanently deleted unless an extension is granted.
+
+* Data Backup: Save your work regularly. Do not rely on the cluster for
+  critical data storage.
+
+If you have any questions or need assistance, please contact your Red Hat
+sponsor.
+
+================================================================================
+This is an automated message from OpenShift Partner Labs.

@@ -3,4 +3,5 @@ kind: ConfigMap
 metadata:
   name: email-service-config
 data:
-  smtp_host: "mailhog-smtp.partner-labs.svc.cluster.local"
+  # SMTP service name (same namespace, no FQDN needed)
+  smtp_host: "mailhog-smtp"

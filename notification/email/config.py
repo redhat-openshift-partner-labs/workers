@@ -18,11 +18,16 @@ class Settings(BaseSettings):
     rabbitmq_port: int = 5672
     rabbitmq_user: str = "guest"
     rabbitmq_pass: str = "guest"
-    rabbitmq_vhost: str = "/"
+    rabbitmq_vhost: str = "opl"
 
-    # Queue names
-    consume_queue: str = "lab.notify.email"
-    failed_queue: str = "lab.notify.email.failed"
+    # Queue configuration
+    # Comma-separated list of queues to consume from
+    consume_queues: str = "notify.user.lab-ready"
+
+    # Exchange for publishing results
+    publish_exchange: str = "opl.notify"
+    success_routing_key: str = "notification.sent"
+    failure_routing_key: str = "notification.failed"
 
     # SMTP settings
     smtp_host: str
@@ -35,13 +40,19 @@ class Settings(BaseSettings):
     # Worker settings
     prefetch_count: int = 1
     max_retries: int = 3
-    template_dir: str = "templates"
+    template_dir: str = "notification/templates"
     verbose: bool = False
 
     @property
     def rabbitmq_url(self) -> str:
         """Build RabbitMQ connection URL."""
+        vhost = self.rabbitmq_vhost if self.rabbitmq_vhost.startswith("/") else f"/{self.rabbitmq_vhost}"
         return (
             f"amqp://{self.rabbitmq_user}:{self.rabbitmq_pass}"
-            f"@{self.rabbitmq_host}:{self.rabbitmq_port}{self.rabbitmq_vhost}"
+            f"@{self.rabbitmq_host}:{self.rabbitmq_port}{vhost}"
         )
+
+    @property
+    def queue_list(self) -> list[str]:
+        """Parse consume_queues into a list."""
+        return [q.strip() for q in self.consume_queues.split(",") if q.strip()]

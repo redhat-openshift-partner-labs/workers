@@ -1,0 +1,37 @@
+# Extracted from queue/rabbitmq-users-permissions.yaml
+# Contains only the notification worker user and permissions
+# The full topology is in the queue repo
+
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: User
+metadata:
+  name: user-worker-notification
+  labels:
+    app.kubernetes.io/part-of: opl
+    opl.io/component: worker-notification
+spec:
+  tags: []
+  rabbitmqClusterReference:
+    name: queue
+
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: Permission
+metadata:
+  name: perm-worker-notification
+  labels:
+    app.kubernetes.io/part-of: opl
+    opl.io/component: worker-notification
+spec:
+  vhost: opl
+  userReference:
+    name: user-worker-notification
+  permissions:
+    configure: ""
+    # Publishes to notify exchange (notification.sent/failed) and handoff (welcome-email.sent/failed)
+    write: "^opl\\.(notify|handoff)$"
+    # Consumes all notify.* queues + approval-required + handoff welcome-email.send
+    read: "^(notify\\.(user|admin)\\.[a-z-]+|lab\\.provision\\.pr\\.approval-required|handoff\\.welcome-email\\.send)$"
+  rabbitmqClusterReference:
+    name: queue
