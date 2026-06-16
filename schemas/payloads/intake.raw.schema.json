@@ -1,0 +1,213 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "payloads/intake.raw.schema.json",
+  "title": "IntakeRawPayload",
+  "description": "Raw Google Sheets payload as emitted by AppScript. Consumed by the ETL worker.",
+  "type": "object",
+  "required": [
+    "form_response_id",
+    "sheet_row_number",
+    "sheet_row"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "form_response_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique ID assigned by the form/AppScript at submission time."
+    },
+    "sheet_row_number": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Row number in the Google Sheet for traceability."
+    },
+    "sheet_row": {
+      "$ref": "#/$defs/SheetRow"
+    }
+  },
+  "$defs": {
+    "SheetRow": {
+      "title": "SheetRow",
+      "description": "Raw column values from the Google Sheet. Required fields must be non-empty for a standard new request. Extension requests may omit lab-configuration fields.",
+      "type": "object",
+      "required": [
+        "request_id",
+        "timestamp",
+        "email",
+        "status",
+        "company_name",
+        "primary_contact_name",
+        "primary_contact_email",
+        "sponsor",
+        "start_date",
+        "lease"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "request_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Same as form_response_id — duplicated in the row for traceability."
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Form submission timestamp."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Submitter email (audit only — not stored in labs table)."
+        },
+        "status": {
+          "type": "string",
+          "description": "Sheet-managed status (e.g. 'Submitted'). Not stored — workers manage their own state.",
+          "examples": ["Submitted"]
+        },
+        "evaluated_on": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when AppScript last evaluated this row. Not stored."
+        },
+        "company_name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Partner company name."
+        },
+        "primary_contact_name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Full name of the primary contact. Split into first/last by ETL."
+        },
+        "primary_contact_email": {
+          "type": "string",
+          "format": "email",
+          "description": "Primary contact email."
+        },
+        "secondary_contact_name": {
+          "type": "string",
+          "default": "",
+          "description": "Full name of the secondary contact. Split into first/last by ETL."
+        },
+        "secondary_contact_email": {
+          "type": "string",
+          "default": "",
+          "description": "Secondary contact email."
+        },
+        "sponsor": {
+          "type": "string",
+          "format": "email",
+          "description": "Red Hat sponsor email."
+        },
+        "start_date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Requested lab start date."
+        },
+        "lease": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Requested lease duration (e.g. '3 weeks (15 working days)', '1 month (20 working days)').",
+          "examples": [
+            "1 week",
+            "2 weeks (10 working days)",
+            "3 weeks (15 working days)",
+            "1 month (20 working days)",
+            "2 months",
+            "3 months"
+          ]
+        },
+        "timezone": {
+          "type": "string",
+          "default": "America/New York City",
+          "description": "Requestor timezone. Mapped to the region field in the labs table.",
+          "examples": ["Europe/Prague", "America/New_York", "Asia/Tokyo"]
+        },
+        "is_extension": {
+          "type": "string",
+          "default": "New Request",
+          "description": "Indicates whether this is a new lab request or an extension.",
+          "examples": ["New Request", "Extension"]
+        },
+        "project_name": {
+          "type": "string",
+          "default": "",
+          "description": "Short project identifier used to derive cluster_name."
+        },
+        "openshift_version": {
+          "type": "string",
+          "default": "",
+          "description": "Requested OpenShift version (required for new requests, may be empty for extensions)."
+        },
+        "request_type": {
+          "type": "string",
+          "default": "",
+          "description": "Lab type. Standard values: 'OpenShift', 'OpenShift Virtualization'.",
+          "examples": ["OpenShift", "OpenShift Virtualization"]
+        },
+        "description": {
+          "type": "string",
+          "default": "",
+          "description": "Free-text description of the use case. Scanned for complexity keywords."
+        },
+        "statement_of_work": {
+          "type": "string",
+          "default": "",
+          "description": "Optional SOW reference. Stored in extras JSONB."
+        },
+        "application_type": {
+          "type": "string",
+          "default": "",
+          "description": "Application type. Stored in extras JSONB."
+        },
+        "deployment_option": {
+          "type": "string",
+          "default": "",
+          "description": "Deployment option. Stored in extras JSONB."
+        },
+        "cluster_size": {
+          "type": "string",
+          "default": "",
+          "description": "Cluster size. Standard values: '', 'Small', 'Standard'.",
+          "examples": ["", "Small", "Standard"]
+        },
+        "virt_size": {
+          "type": "string",
+          "default": "",
+          "description": "Virtualization cluster size. Standard values: '', 'Standard'. Stored in extras JSONB.",
+          "examples": ["", "Standard"]
+        },
+        "ai_deployment_option": {
+          "type": "string",
+          "default": "",
+          "description": "AI/ML deployment option. Stored in extras JSONB."
+        },
+        "ai_size": {
+          "type": "string",
+          "default": "",
+          "description": "AI/ML cluster size. Stored in extras JSONB."
+        },
+        "gpu_required": {
+          "type": "string",
+          "default": "",
+          "description": "GPU requirements. Non-empty triggers non-standard flag. Stored in extras JSONB."
+        },
+        "note": {
+          "type": "string",
+          "default": "",
+          "description": "Requestor notes. Substantial content (>10 chars) triggers non-standard flag. Stored as notes in labs table."
+        },
+        "extension_challenges": {
+          "type": "string",
+          "default": "",
+          "description": "For extension requests: description of current challenges. Stored in extras JSONB."
+        },
+        "extension_objectives": {
+          "type": "string",
+          "default": "",
+          "description": "For extension requests: objectives for the extended period. Stored in extras JSONB."
+        }
+      }
+    }
+  }
+}

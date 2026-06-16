@@ -1,0 +1,190 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "payloads/intake.normalized.schema.json",
+  "title": "IntakeNormalizedPayload",
+  "description": "Canonical lab request produced by the ETL worker from an intake.raw message. Consumed by the Scribe/Provisioning workers.",
+  "type": "object",
+  "required": [
+    "db_columns",
+    "extras",
+    "is_standard_config"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "db_columns": {
+      "$ref": "#/$defs/DbColumns"
+    },
+    "extras": {
+      "type": "object",
+      "description": "Fields that go into the labs.extras JSONB column. Includes virt_size, is_extension, ai_*, gpu_required, statement_of_work, deployment_option, application_type, extension_* and any unknown sheet columns.",
+      "additionalProperties": true
+    },
+    "is_standard_config": {
+      "type": "boolean",
+      "description": "True if all is_standard_criteria fields have standard values and the description contains no complexity keywords. Determines whether the Provisioning worker auto-provisions or queues for manual review."
+    }
+  },
+  "$defs": {
+    "DbColumns": {
+      "title": "DbColumns",
+      "description": "Fields mapped directly to columns in the labs table. All required fields are guaranteed present after ETL transformation.",
+      "type": "object",
+      "required": [
+        "cluster_id",
+        "generated_name",
+        "cluster_name",
+        "cloud_provider",
+        "state",
+        "company_name",
+        "primary_first",
+        "primary_last",
+        "primary_email",
+        "secondary_first",
+        "secondary_last",
+        "secondary_email",
+        "sponsor",
+        "project_name",
+        "request_type",
+        "openshift_version",
+        "description",
+        "notes",
+        "cluster_size",
+        "start_date",
+        "end_date",
+        "lease_time",
+        "region",
+        "partner",
+        "always_on",
+        "hold"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "cluster_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "ETL-generated UUID for the cluster resource."
+        },
+        "generated_name": {
+          "type": "string",
+          "pattern": "^opl-[a-z0-9]{6}$",
+          "description": "Short, DNS-safe lab identifier (e.g. 'opl-a7f3b2'). Used as the unique key in the labs table."
+        },
+        "cluster_name": {
+          "type": "string",
+          "description": "DNS-safe name derived from company_name + project_name (e.g. 'acme-fsi-demo')."
+        },
+        "cloud_provider": {
+          "type": "string",
+          "description": "Cloud provider for the lab cluster. Currently always 'aws'.",
+          "const": "aws"
+        },
+        "state": {
+          "type": "string",
+          "description": "Initial state set by ETL. Always 'Pending' on intake.normalized.",
+          "const": "Pending"
+        },
+        "company_name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Partner company name."
+        },
+        "primary_first": {
+          "type": "string",
+          "description": "Primary contact first name (split from primary_contact_name)."
+        },
+        "primary_last": {
+          "type": "string",
+          "description": "Primary contact last name (split from primary_contact_name)."
+        },
+        "primary_email": {
+          "type": "string",
+          "format": "email",
+          "description": "Primary contact email."
+        },
+        "secondary_first": {
+          "type": "string",
+          "default": "",
+          "description": "Secondary contact first name."
+        },
+        "secondary_last": {
+          "type": "string",
+          "default": "",
+          "description": "Secondary contact last name."
+        },
+        "secondary_email": {
+          "type": "string",
+          "default": "",
+          "description": "Secondary contact email."
+        },
+        "sponsor": {
+          "type": "string",
+          "format": "email",
+          "description": "Red Hat sponsor email."
+        },
+        "project_name": {
+          "type": "string",
+          "description": "Project identifier used in cluster_name derivation."
+        },
+        "request_type": {
+          "type": "string",
+          "description": "Lab type (e.g. 'OpenShift', 'OpenShift Virtualization')."
+        },
+        "openshift_version": {
+          "type": "string",
+          "description": "Requested OpenShift version."
+        },
+        "description": {
+          "type": "string",
+          "description": "Free-text use case description."
+        },
+        "notes": {
+          "type": "string",
+          "default": "",
+          "description": "Requestor notes (from the note sheet field)."
+        },
+        "cluster_size": {
+          "type": "string",
+          "default": "",
+          "description": "Cluster size. Standard values: '', 'Small', 'Standard'."
+        },
+        "start_date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Requested lab start date (ISO 8601)."
+        },
+        "end_date": {
+          "type": "string",
+          "description": "Computed end date derived from start_date + lease_time. ISO 8601 or empty string if unparseable."
+        },
+        "lease_time": {
+          "type": "string",
+          "description": "Original lease string from the sheet (e.g. '3 weeks (15 working days)')."
+        },
+        "region": {
+          "type": "string",
+          "description": "Region/timezone from the sheet's timezone field."
+        },
+        "partner": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether this is a partner lab. Defaults to false."
+        },
+        "always_on": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether the lab should remain active outside business hours. Defaults to false."
+        },
+        "hold": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether provisioning should be held pending manual review. Defaults to false."
+        },
+        "request_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Original form_response_id passed through for traceability."
+        }
+      }
+    }
+  }
+}

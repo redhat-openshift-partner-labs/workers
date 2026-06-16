@@ -1,0 +1,27 @@
+{
+  "_comment": "INVALID: sheet_row is missing the required 'company_name' field.",
+  "event_type": "intake.raw",
+  "event_id": "00000000-0000-4000-8000-000000000001",
+  "timestamp": "2026-04-06T16:25:57.806Z",
+  "source": "appscript-intake",
+  "correlation_id": "00000000-0000-4000-8000-000000000002",
+  "causation_id": null,
+  "version": "1.0.0",
+  "retry_count": 0,
+  "payload_type": "google-sheets-v1",
+  "payload": {
+    "form_response_id": "00000000-0000-4000-8000-000000000003",
+    "sheet_row_number": 1,
+    "sheet_row": {
+      "request_id": "00000000-0000-4000-8000-000000000003",
+      "timestamp": "2026-04-06T14:01:15.275Z",
+      "email": "sponsor@redhat.com",
+      "status": "Submitted",
+      "primary_contact_name": "Jane Smith",
+      "primary_contact_email": "jane.smith@acme.com",
+      "sponsor": "sponsor@redhat.com",
+      "start_date": "2026-04-14T04:00:00.000Z",
+      "lease": "3 weeks (15 working days)"
+    }
+  }
+}
