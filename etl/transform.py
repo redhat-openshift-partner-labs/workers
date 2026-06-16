@@ -8,7 +8,9 @@ and produces either a normalized payload or a structured error.
 
 from __future__ import annotations
 
+import random
 import re
+import string
 import uuid
 from datetime import datetime, timezone
 from typing import Any
@@ -117,9 +119,17 @@ def _generate_uuid4() -> str:
     return str(uuid.uuid4())
 
 
-def _generate_short_id() -> str:
-    """Generate a short, unique, DNS-safe ID like 'opl-a7f3b2'."""
-    return f"opl-{uuid.uuid4().hex[:6]}"
+def _generate_short_id(db_row: dict) -> str:
+    """Generate a short ID like 'a7f3b2c1-acmecorp'."""
+    uuid_part = uuid.uuid4().hex[:8]
+
+    company = db_row.get("company_name", "")
+    slug = re.sub(r"[^a-z0-9]", "", company.lower())[:8]
+    pad_len = 8 - len(slug)
+    if pad_len > 0:
+        slug += "".join(random.choices(string.ascii_lowercase + string.digits, k=pad_len))
+
+    return f"{uuid_part}-{slug}"
 
 
 def _generate_datetime_now() -> str:
@@ -135,7 +145,7 @@ def _derive_cluster_name(db_row: dict) -> str:
     project = db_row.get("project_name", "labs")
 
     company_slug = re.sub(r"[^a-z0-9]", "", company.lower().split()[0]) if company else "labs"
-    project_slug = re.sub(r"[^a-z0-9-]", "", project.lower().replace(" ", "-"))
+    project_slug = re.sub(r"[^a-z0-9-]", "", project.lower().replace(" ", ""))
 
     prefix = project_slug[:11]
     if len(prefix) < 11:
@@ -150,7 +160,7 @@ def _derive_cluster_name(db_row: dict) -> str:
 
 GENERATORS = {
     "uuid4": lambda _row: _generate_uuid4(),
-    "short_id": lambda _row: _generate_short_id(),
+    "short_id": lambda _row: _generate_short_id(_row),
     "datetime_now": lambda _row: _generate_datetime_now(),
     "derive_cluster_name": _derive_cluster_name,
     "static": None,  # handled separately (uses field.value)

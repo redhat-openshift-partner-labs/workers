@@ -3,6 +3,8 @@ Tests for the ETL transform pipeline.
 Uses the actual sample payload structure from the Google Sheet.
 """
 
+import re
+
 import pytest
 from pathlib import Path
 
@@ -96,7 +98,13 @@ class TestTransformHappyPath:
         db = result["db_columns"]
 
         assert db["cluster_id"]  # UUID, non-empty
-        assert db["generated_name"].startswith("opl-")
+        # generated_name format: xxxxxxxx-yyyyyyyy (uuid8-company8)
+        parts = db["generated_name"].split("-")
+        assert len(parts) == 2
+        assert len(parts[0]) == 8
+        assert len(parts[1]) == 8
+        assert re.match(r"^[a-z0-9]{8}-[a-z0-9]{8}$", db["generated_name"])
+        assert parts[1].startswith("acmecorp")
         # cluster_name format: xxxxxxxxxxx-yyyyyyyy (prefix-uuid8)
         assert db["cluster_name"]
         prefix, suffix = db["cluster_name"].rsplit("-", 1)
@@ -224,3 +232,23 @@ class TestUnknownFields:
         payload = {**SAMPLE_PAYLOAD, "some_new_column": "surprise"}
         result = transform(SCHEMA, payload)
         assert result["extras"]["some_new_column"] == "surprise"
+
+
+class TestShortIdFormat:
+    """Tests for the xxxxxxxx-yyyyyyyy generated_name format."""
+
+    def test_short_company_name_padded(self):
+        payload = {**SAMPLE_PAYLOAD, "company_name": "IBM"}
+        result = transform(SCHEMA, payload)
+        name = result["db_columns"]["generated_name"]
+        assert re.match(r"^[a-z0-9]{8}-[a-z0-9]{8}$", name)
+        assert name.split("-")[1].startswith("ibm")
+
+    def test_long_company_name_truncated(self):
+        payload = {**SAMPLE_PAYLOAD, "company_name": "International Business Machines"}
+        result = transform(SCHEMA, payload)
+        name = result["db_columns"]["generated_name"]
+        parts = name.split("-")
+        assert len(parts[1]) == 8
+        assert parts[1] == "internat"
+
